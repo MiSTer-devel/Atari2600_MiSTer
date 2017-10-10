@@ -34,4 +34,4 @@ All source code and other content found in this archive is subject to GNU Genera
 Copyright 2006, 2007, 2010 Retromaster.
 
 ## Download precompiled binaries
-Go to [releases](https://github.com/MiSTer-devel/Atari800_MiSTer/tree/master/releases) folder.
+Go to [releases](https://github.com/MiSTer-devel/Atari2600_MiSTer/tree/master/releases) folder.
