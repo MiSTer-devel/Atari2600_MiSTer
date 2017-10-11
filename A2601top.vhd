@@ -72,10 +72,9 @@ entity A2601top is
 		p_select  : in std_logic;
 		p_color   : in std_logic;
 
-		cart_size : in std_logic_vector(15 downto 0);
-		ram_addr  : out std_logic_vector(14 downto 0);
+		cart_size : in std_logic_vector(19 downto 0);
+		ram_addr  : out std_logic_vector(15 downto 0);
 		ram_data  : in std_logic_vector(7 downto 0);
-		ram_rd    : out std_logic;
 
 		pal       : in std_logic;
 		p_dif     : in std_logic_vector(1 downto 0)
@@ -117,7 +116,7 @@ architecture arch of A2601top is
 		);
     end component;
 	
-   component ram128x8 is
+    component ram128x8 is
         port(clk: in std_logic;
              r: in std_logic;
              d_in: in std_logic_vector(7 downto 0);
@@ -125,6 +124,14 @@ architecture arch of A2601top is
              a: in std_logic_vector(6 downto 0));
     end component;
     
+    component ram256x8 is
+        port(clk: in std_logic;
+             r: in std_logic;
+             d_in: in std_logic_vector(7 downto 0);
+             d_out: out std_logic_vector(7 downto 0);
+             a: in std_logic_vector(7 downto 0));
+    end component;
+
     signal a: std_logic_vector(14 downto 0);
     signal pa: std_logic_vector(7 downto 0);
     signal pb: std_logic_vector(7 downto 0);
@@ -157,7 +164,7 @@ architecture arch of A2601top is
     signal sc_d_out: std_logic_vector(7 downto 0);
     signal sc_a: std_logic_vector(6 downto 0);
 
-    subtype bss_type is std_logic_vector(2 downto 0);
+    subtype bss_type is std_logic_vector(3 downto 0);
 
     signal bank: std_logic_vector(3 downto 0) := "0000";
     signal tf_bank: std_logic_vector(1 downto 0);
@@ -166,27 +173,34 @@ architecture arch of A2601top is
     signal e0_bank1: std_logic_vector(2 downto 0) := "000";
     signal e0_bank2: std_logic_vector(2 downto 0) := "000";
 
+    signal f0_bank: std_logic_vector(3 downto 0) := "0000";
+
     signal cpu_a: std_logic_vector(12 downto 0);
     signal cpu_d: std_logic_vector(7 downto 0);
 	
-    constant BANK00: bss_type := "000";
-    constant BANKF8: bss_type := "001";
-    constant BANKF6: bss_type := "010";
-    constant BANKFE: bss_type := "011";
-    constant BANKE0: bss_type := "100";
-    constant BANK3F: bss_type := "101";
-    constant BANKF4: bss_type := "110";
+    constant BANK00: bss_type := "0000";
+    constant BANKF8: bss_type := "0001";
+    constant BANKF6: bss_type := "0010";
+    constant BANKFE: bss_type := "0011";
+    constant BANKE0: bss_type := "0100";
+    constant BANK3F: bss_type := "0101";
+    constant BANKF4: bss_type := "0110";
+    constant BANKF0: bss_type := "0111";
+    constant BANKFA: bss_type := "1000";
 
-    signal bss: bss_type := BANK00; 	--bank switching method
+    signal bss:  bss_type := BANK00; 	--bank switching method
+    signal bss2: bss_type := BANK00; 	--bank switching method
     signal sc: std_logic := '0';		--superchip enabled or not
   
     signal paddle_ena1 : std_logic := '0';
     signal paddle_ena2 : std_logic := '0';
+	 
+	 signal cpu_r : std_logic;
 
 begin
 	  
 	ms_A2601: A2601
-        port map(clk, clk_vid, rst, cpu_d, cpu_a, ram_rd, pa, pb, 
+        port map(clk, clk_vid, rst, cpu_d, cpu_a, cpu_r, pa, pb, 
 				paddle_0, paddle_1, paddle_ena1, paddle_2, paddle_3, paddle_ena2,
 				inpt4, inpt5, open, vsyn, hsyn, O_BLANK, rgbx2, 
 				au0, au1, av0, av1, ph0, ph1, pal);
@@ -261,23 +275,21 @@ begin
 
     audio <= std_logic_vector(auv0 + auv1);
 
-    sc_ram128x8: ram128x8
-        port map(sc_clk, sc_r, sc_d_in, sc_d_out, sc_a);
+    sc_ram256x8: ram256x8
+        port map(sc_clk, sc_r, cpu_d, sc_d_out, cpu_a(7 downto 0));
 
     -- This clock is phase shifted so that we can use Xilinx synchronous block RAM.
     sc_clk <= not ph1;
-    sc_r <= '0' when cpu_a(12 downto 7) = "100000" else '1';
-    sc_d_in <= cpu_d;
-    sc_a <= cpu_a(6 downto 0);
+    sc_r <= '0' when cpu_a(12 downto 8) = "10000" and bss = BANKFA else '1';
 
     -- ROM and SC output
     process(cpu_a, ram_data, sc_d_out, sc, reset)
     begin
         if(reset = '1') then
             cpu_d <= x"FF";
-        elsif (cpu_a(12 downto 7) = "100001" and sc = '1') then
+        elsif (cpu_a(12 downto 8) = "10001" and bss = BANKFA) then
             cpu_d <= sc_d_out;
-        elsif (cpu_a(12 downto 7) = "100000" and sc = '1') then
+        elsif (cpu_a(12 downto 8) = "10000" and bss = BANKFA) then
             cpu_d <= "ZZZZZZZZ";
         elsif (cpu_a(12) = '1') then
             cpu_d <= ram_data;
@@ -296,14 +308,16 @@ begin
     tf_bank <= bank(1 downto 0) when (cpu_a(11) = '0') else "11";
 
     with bss select ram_addr <=
-		  "000" & cpu_a(11 downto 0) when BANK00,
-		  "00" & bank(0) & cpu_a(11 downto 0) when BANKF8,
-		  '0' & bank(1 downto 0) & cpu_a(11 downto 0) when BANKF6,
-      bank(2 downto 0) & cpu_a(11 downto 0) when BANKF4,
-		  "00" & bank(0) & cpu_a(11 downto 0) when BANKFE,
-		  "00" & e0_bank & cpu_a(9 downto 0) when BANKE0,
-		  "00" & tf_bank & cpu_a(10 downto 0) when BANK3F,
-		  "---------------" when others;
+		  "0000" & cpu_a(11 downto 0) when BANK00,
+		  "000" & bank(0) & cpu_a(11 downto 0) when BANKF8,
+		  "00" & bank(1 downto 0) & cpu_a(11 downto 0) when BANKFA,
+		  "00" & bank(1 downto 0) & cpu_a(11 downto 0) when BANKF6,
+        '0' & bank(2 downto 0) & cpu_a(11 downto 0) when BANKF4,
+		  "000" & bank(0) & cpu_a(11 downto 0) when BANKFE,
+		  "000" & e0_bank & cpu_a(9 downto 0) when BANKE0,
+		  "000" & tf_bank & cpu_a(10 downto 0) when BANK3F,
+		          f0_bank & cpu_a(11 downto 0) when BANKF0,
+		  "----------------" when others;
 
     bankswch: process(ph0)
     begin
@@ -315,6 +329,14 @@ begin
                 e0_bank2 <= "000";
             else
                 case bss is
+                    when BANKFA =>
+                        if (cpu_a = "1" & X"FF8") then
+                            bank <= "0000";
+                        elsif (cpu_a = "1" & X"FF9") then
+                            bank <= "0001";
+                        elsif (cpu_a = "1" & X"FFA") then
+                            bank <= "0010";
+                        end if;
                     when BANKF8 =>
                         if (cpu_a = "1" & X"FF8") then
                             bank <= "0000";
@@ -367,24 +389,32 @@ begin
                         if (cpu_a = "0" & X"03F") then
                             bank(1 downto 0) <= cpu_d(1 downto 0);
                         end if;
+                    when BANKF0 =>
+                        if (cpu_a = "1" & X"FF0") then
+                            f0_bank <= std_logic_vector(unsigned(f0_bank)+1);
+                        end if;
                     when others =>
                         null;
                 end case;
             end if;
         end if;
     end process;
-    
+
 	 -- derive banking scheme from cartridge size
     process(cart_size)
     begin
-      if(cart_size <= x"1000") then    -- 4k and less
+      if(cart_size <= x"01000") then    -- 4k and less
         bss <= BANK00;
-      elsif(cart_size <= x"2000") then -- 8k and less
+      elsif(cart_size <= x"02000") then -- 8k and less
         bss <= BANKF8;
-      elsif(cart_size <= x"4000") then -- 16k and less
+      elsif(cart_size <= x"03000") then -- 12k and less
+        bss <= BANKFA;
+      elsif(cart_size <= x"04000") then -- 16k and less
         bss <= BANKF6;
-      elsif(cart_size <= x"8000") then -- 32k and less
+      elsif(cart_size <= x"08000") then -- 32k and less
         bss <= BANKF4;
+      elsif(cart_size  = x"10000") then -- 64k
+        bss <= BANKF0;
       else
         bss <= BANK00;
       end if;

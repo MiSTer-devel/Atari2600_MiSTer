@@ -200,14 +200,14 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_wait(0)
 );
 
-wire [14:0] ram_addr;
+wire [15:0] ram_addr;
 wire  [7:0] ram_data;
 
 ram ram
 (
 	.clock(clk_sys),
 	.data(ioctl_dout),
-	.wraddress(ioctl_addr[14:0]),
+	.wraddress(ioctl_addr[15:0]),
 	.wren(ioctl_wr),
 	.rdaddress(ram_addr),
 	.q(ram_data)
@@ -268,7 +268,7 @@ A2601top A2601top
 	.p_select(~(joy_0[8] | joy_1[8])),
 	.p_color(~status[2]),
 
-	.cart_size(ioctl_addr[15:0]),
+	.cart_size(ioctl_addr[19:0]),
 	.ram_addr(ram_addr),
 	.ram_data(ram_data),
 
