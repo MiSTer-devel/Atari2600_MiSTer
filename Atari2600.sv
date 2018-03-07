@@ -2,7 +2,7 @@
 //  Atari 2600
 // 
 //  Port to MiSTer
-//  Copyright (C) 2017 Sorgelig
+//  Copyright (C) 2017,2018 Sorgelig
 //
 //  This program is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the Free
@@ -29,7 +29,7 @@ module emu
 	input         RESET,
 
 	//Must be passed to hps_io module
-	inout  [37:0] HPS_BUS,
+	inout  [44:0] HPS_BUS,
 
 	//Base video clock. Usually equals to CLK_SYS.
 	output        CLK_VIDEO,
@@ -51,7 +51,7 @@ module emu
 
 	output        LED_USER,  // 1 - ON, 0 - OFF.
 
-	// b[1]: 0 - LED status is system status ORed with b[0]
+	// b[1]: 0 - LED status is system status OR'd with b[0]
 	//       1 - LED status is controled solely by b[0]
 	// hint: supply 2'b00 to let the system control the LED.
 	output  [1:0] LED_POWER,
@@ -60,6 +60,7 @@ module emu
 	output [15:0] AUDIO_L,
 	output [15:0] AUDIO_R,
 	output        AUDIO_S, // 1 - signed audio samples, 0 - unsigned
+	output  [1:0] AUDIO_MIX, // 0 - no mix, 1 - 25%, 2 - 50%, 3 - 100% (mono)
 	input         TAPE_IN,
 
 	// SD-SPI
@@ -67,6 +68,7 @@ module emu
 	output        SD_MOSI,
 	input         SD_MISO,
 	output        SD_CS,
+	input         SD_CD,
 
 	//High latency DDR3 RAM interface
 	//Use for non-critical time purposes
@@ -115,6 +117,7 @@ localparam CONF_STR = {
 	"O1,Video standard,NTSC,PAL;",
 	"O2,Video mode,Color,Mono;",
 	"O8,Aspect ratio,4:3,16:9;", 
+	"O56,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
 	"-;",
 	"O3,Difficulty P1,A,B;",
 	"O4,Difficulty P2,A,B;",
@@ -166,6 +169,8 @@ wire  [7:0] ioctl_dout;
 wire        ioctl_download;
 wire  [7:0] ioctl_index; 
 
+wire        forced_scandoubler;
+
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
 	.clk_sys(clk_sys),
@@ -180,6 +185,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
+	.forced_scandoubler(forced_scandoubler),
 
 	.ps2_kbd_led_use(0),
 	.ps2_kbd_led_status(0),
@@ -213,19 +219,11 @@ ram ram
 	.q(ram_data)
 );
 
-assign CLK_VIDEO = clk_sys;
-assign CE_PIXEL  = ce_vid;
-
 wire [4:0] audio;
 assign AUDIO_R = {3{audio}};
 assign AUDIO_L = AUDIO_R;
 assign AUDIO_S = 0;
-
-assign VGA_R[1:0] = VGA_R[7:6];
-assign VGA_G[1:0] = VGA_G[7:6];
-assign VGA_B[1:0] = VGA_B[7:6];
-assign VGA_DE = ~blank;
-wire   blank;
+assign AUDIO_MIX = 0;
 
 A2601top A2601top
 (
@@ -235,12 +233,13 @@ A2601top A2601top
 
 	.audio(audio),
 
-	.O_VSYNC(VGA_VS),
-	.O_HSYNC(VGA_HS),
-	.O_BLANK(blank),
-	.O_VIDEO_R(VGA_R[7:2]),
-	.O_VIDEO_G(VGA_G[7:2]),
-	.O_VIDEO_B(VGA_B[7:2]),
+	//.O_VSYNC(VSync),
+	.O_HSYNC(HSync),
+	.O_HBLANK(HBlank),
+	.O_VBLANK(VBlank),
+	.O_VIDEO_R(R),
+	.O_VIDEO_G(G),
+	.O_VIDEO_B(B),
 
 	.p_r(~joy_0[0]),
 	.p_l(~joy_0[1]),
@@ -274,6 +273,43 @@ A2601top A2601top
 
 	.pal(status[1]),
 	.p_dif(status[4:3])
+);
+
+wire [5:0] R,G,B;
+wire HSync;
+wire HBlank, VBlank;
+reg VSync;
+
+always @(posedge clk_sys) begin
+	reg old_hs, old_vbl;
+	reg [7:0] vbl;
+	
+	old_hs <= HSync;
+	if(~old_hs & HSync) begin
+		old_vbl <= VBlank;
+		{VSync,vbl} <= {vbl,1'b0};
+		if(~old_vbl & VBlank) vbl <= 8'b00111100;
+	end
+end
+
+wire [1:0] scale = status[6:5];
+
+assign CLK_VIDEO = clk_sys;
+
+video_mixer #(.LINE_LENGTH(300)) video_mixer
+(
+	.*,
+	.ce_pix(ce_vid),
+	.ce_pix_out(CE_PIXEL),
+
+	.scanlines({scale == 3, scale == 2}),
+	.scandoubler(scale || forced_scandoubler),
+	.hq2x(scale==1),
+	.mono(0),
+
+	.R({R,R[5:4]}),
+	.G({G,G[5:4]}),
+	.B({B,B[5:4]})
 );
 
 //////////////////   ANALOG AXIS   ///////////////////

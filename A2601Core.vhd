@@ -41,7 +41,8 @@ entity A2601 is
 		colu: out std_logic_vector(6 downto 0);
 		vsyn: out std_logic;
 		hsyn: out std_logic;
-		blank: out std_logic;
+		hblank: out std_logic;
+		vblank: out std_logic;
 		rgbx2: out std_logic_vector(23 downto 0);
 		au0: out std_logic;
 		au1: out std_logic;
@@ -88,7 +89,8 @@ architecture arch of A2601 is
          colu: out std_logic_vector(6 downto 0);
          hsyn: out std_logic;
          vsyn: out std_logic;
-			blank: out std_logic;
+			ohblank: out std_logic;
+			ovblank: out std_logic;
          rgbx2: out std_logic_vector(23 downto 0);
          rdy: out std_logic;
          ph0: out std_logic;
@@ -137,7 +139,7 @@ begin
 
     tia_inst: TIA
         port map(clk, clk_vid, tia_cs, read, tia_a, d,
-            colu, hsyn, vsyn, blank, rgbx2, rdy, ph0, ph1,
+            colu, hsyn, vsyn, hblank, vblank, rgbx2, rdy, ph0, ph1,
             au0, au1, av0, av1,
 				paddle_0, paddle_1, paddle_ena1, 
 				paddle_2, paddle_3, paddle_ena2,

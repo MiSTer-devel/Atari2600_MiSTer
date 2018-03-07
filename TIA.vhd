@@ -614,7 +614,8 @@ entity TIA is
 		colu: out std_logic_vector(6 downto 0);
 		hsyn: out std_logic;
 		vsyn: out std_logic;
-		blank: out std_logic;
+		ohblank: out std_logic;
+		ovblank: out std_logic;
 		rgbx2: out std_logic_vector(23 downto 0);
 		rdy: out std_logic;
 		ph0: out std_logic;
@@ -900,13 +901,14 @@ begin
                         pf_cnt <= '1';
                     when "011100" =>
                         hblank <= hmove;
-								blank  <= vblank;
+                        ovblank <= vblank;
+                        ohblank <= '0';
                     when "010111" =>
                         hblank <= '0';
                     when "101001" =>
                         center <= '0';
                     when "000000" =>
-								blank  <= '1';
+                        ohblank  <= '1';
                     when "010100" =>
                         hblank <= '1';
                         pf_cnt <= '0';
@@ -1380,5 +1382,5 @@ begin
 		mode => '0' & pal,	-- 00 = NTSC, 01 = PAL
 		outColor => rgbx2
 	);	
-		
+	
 end arch;

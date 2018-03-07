@@ -2,7 +2,7 @@
 // scandoubler.v
 // 
 // Copyright (c) 2015 Till Harbaum <till@harbaum.org> 
-// Copyright (c) 2017 Sorgelig
+// Copyright (c) 2017,2018 Sorgelig
 // 
 // This source file is free software: you can redistribute it and/or modify 
 // it under the terms of the GNU General Public License as published 
@@ -17,7 +17,6 @@
 // You should have received a copy of the GNU General Public License 
 // along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 
-// TODO: Delay vsync one line
 
 module scandoubler #(parameter LENGTH, parameter HALF_DEPTH)
 (
@@ -52,11 +51,11 @@ module scandoubler #(parameter LENGTH, parameter HALF_DEPTH)
 
 localparam DWIDTH = HALF_DEPTH ? 3 : 7;
 
-assign vs_out = vs_in;
 assign ce_pix_out = ce_x4;
 
 //Compensate picture shift after HQ2x
 assign vb_out = vbo[2];
+assign vs_out = vso[2];
 assign hb_out = &hbo[5:4];
 
 reg  [7:0] pix_len = 0;
@@ -111,6 +110,7 @@ Hq2x #(.LENGTH(LENGTH), .HALF_DEPTH(HALF_DEPTH)) Hq2x
 reg [10:0] sd_h;
 reg  [1:0] sd_line;
 reg  [2:0] vbo;
+reg  [2:0] vso;
 reg  [5:0] hbo;
 
 reg [DWIDTH:0] r_d;
@@ -150,7 +150,10 @@ always @(posedge clk_sys) begin
 		end
 
 		// save position of rising edge
-		if(!hs && hs_in) hs_rise <= {hcnt,1'b1};
+		if(!hs && hs_in) begin
+			hs_rise <= {hcnt,1'b1};
+			vso <= {vso[1:0], vs_in};
+		end
 
 		vs <= vs_in;
 		if(vs && ~vs_in) sd_line <= 0;

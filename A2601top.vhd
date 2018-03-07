@@ -41,7 +41,8 @@ entity A2601top is
 
 		O_VSYNC   : out std_logic;
 		O_HSYNC   : out std_logic;
-		O_BLANK   : out std_logic;
+		O_HBLANK  : out std_logic;
+		O_VBLANK  : out std_logic;
 		O_VIDEO_R : out std_logic_vector(5 downto 0);
 		O_VIDEO_G : out std_logic_vector(5 downto 0);
 		O_VIDEO_B : out std_logic_vector(5 downto 0);			
@@ -104,7 +105,8 @@ architecture arch of A2601top is
          colu: out std_logic_vector(6 downto 0);
          vsyn: out std_logic;
          hsyn: out std_logic;
-			blank: out std_logic;
+			hblank: out std_logic;
+			vblank: out std_logic;
 			rgbx2: out std_logic_vector(23 downto 0);
          au0: out std_logic;
          au1: out std_logic;
@@ -202,7 +204,7 @@ begin
 	ms_A2601: A2601
         port map(clk, clk_vid, rst, cpu_d, cpu_a, cpu_r, pa, pb, 
 				paddle_0, paddle_1, paddle_ena1, paddle_2, paddle_3, paddle_ena2,
-				inpt4, inpt5, open, vsyn, hsyn, O_BLANK, rgbx2, 
+				inpt4, inpt5, open, vsyn, hsyn, O_HBLANK, O_VBLANK, rgbx2, 
 				au0, au1, av0, av1, ph0, ph1, pal);
 	
 	
