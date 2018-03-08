@@ -140,11 +140,13 @@ pll pll
 );
 
 reg ce_vid;
+reg ce_pp;
 always @(negedge clk_sys) begin
 	reg [3:0] div;
 
 	div <= div + 1'd1;
 	ce_vid <= !div;
+	ce_pp <= scandoubler ? !div[0] : !div[1:0];
 end
 
 wire reset = RESET | status[0] | ~initReset_n | buttons[1] | ioctl_download;
@@ -295,15 +297,17 @@ end
 wire [1:0] scale = status[6:5];
 
 assign CLK_VIDEO = clk_sys;
+assign CE_PIXEL = ce_pp;
+
+wire scandoubler = (scale || forced_scandoubler);
 
 video_mixer #(.LINE_LENGTH(300)) video_mixer
 (
 	.*,
 	.ce_pix(ce_vid),
-	.ce_pix_out(CE_PIXEL),
+	.ce_pix_out(),
 
 	.scanlines({scale == 3, scale == 2}),
-	.scandoubler(scale || forced_scandoubler),
 	.hq2x(scale==1),
 	.mono(0),
 
