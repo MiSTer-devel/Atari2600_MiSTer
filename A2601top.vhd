@@ -73,6 +73,8 @@ entity A2601top is
 		p_select  : in std_logic;
 		p_color   : in std_logic;
 
+		sc        : in std_logic; --SuperChip enable
+		force_bs  : in std_logic_vector(3 downto 0); -- forced bank switch type
 		cart_size : in std_logic_vector(19 downto 0);
 		ram_addr  : out std_logic_vector(15 downto 0);
 		ram_data  : in std_logic_vector(7 downto 0);
@@ -191,18 +193,14 @@ architecture arch of A2601top is
     constant BANKFA: bss_type := "1000";
 
     signal bss:  bss_type := BANK00; 	--bank switching method
-    signal bss2: bss_type := BANK00; 	--bank switching method
-    signal sc: std_logic := '0';		--superchip enabled or not
   
     signal paddle_ena1 : std_logic := '0';
     signal paddle_ena2 : std_logic := '0';
 	 
-	 signal cpu_r : std_logic;
-
 begin
 	  
 	ms_A2601: A2601
-        port map(clk, clk_vid, rst, cpu_d, cpu_a, cpu_r, pa, pb, 
+        port map(clk, clk_vid, rst, cpu_d, cpu_a, open, pa, pb, 
 				paddle_0, paddle_1, paddle_ena1, paddle_2, paddle_3, paddle_ena2,
 				inpt4, inpt5, open, vsyn, hsyn, O_HBLANK, O_VBLANK, rgbx2, 
 				au0, au1, av0, av1, ph0, ph1, pal);
@@ -278,17 +276,22 @@ begin
     audio <= std_logic_vector(auv0 + auv1);
 
     sc_ram256x8: ram256x8
-        port map(sc_clk, sc_r, cpu_d, sc_d_out, cpu_a(7 downto 0));
+        port map(sc_clk, sc_r, cpu_d, sc_d_out, (cpu_a(7) and not sc)&cpu_a(6 downto 0));
 
     -- This clock is phase shifted so that we can use Xilinx synchronous block RAM.
     sc_clk <= not ph1;
-    sc_r <= '0' when cpu_a(12 downto 8) = "10000" and bss = BANKFA else '1';
+    sc_r <= '0' when cpu_a(12 downto 7) = "100000" and sc = '1' else
+            '0' when cpu_a(12 downto 8) = "10000" and bss = BANKFA else '1';
 
     -- ROM and SC output
-    process(cpu_a, ram_data, sc_d_out, sc, reset)
+    process(cpu_a, ram_data, sc_d_out, sc, reset, bss)
     begin
         if(reset = '1') then
             cpu_d <= x"FF";
+        elsif (cpu_a(12 downto 7) = "100001" and sc = '1') then
+            cpu_d <= sc_d_out;
+        elsif (cpu_a(12 downto 7) = "100000" and sc = '1') then
+            cpu_d <= "ZZZZZZZZ";
         elsif (cpu_a(12 downto 8) = "10001" and bss = BANKFA) then
             cpu_d <= sc_d_out;
         elsif (cpu_a(12 downto 8) = "10000" and bss = BANKFA) then
@@ -403,9 +406,11 @@ begin
     end process;
 
 	 -- derive banking scheme from cartridge size
-    process(cart_size)
+    process(cart_size,force_bs)
     begin
-      if(cart_size <= x"01000") then    -- 4k and less
+      if(force_bs /= "0000") then
+        bss <= force_bs;
+      elsif(cart_size <= x"01000") then -- 4k and less
         bss <= BANK00;
       elsif(cart_size <= x"02000") then -- 8k and less
         bss <= BANKF8;
@@ -423,6 +428,3 @@ begin
     end process;
 
 end arch;
-
-
-

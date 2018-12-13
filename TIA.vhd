@@ -451,7 +451,7 @@ end paddle;
 
 architecture arch of paddle is 
 begin
-	process(clk, rst)
+	process(clk, rst, value)
 		variable cnt: integer range 0 to 190;
 	begin 
 		if( rst = '1' ) then

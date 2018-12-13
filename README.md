@@ -14,6 +14,11 @@
 * Video aspect ratio switch in settings menu
 * Mouse emulates analog paddles.
 
+### Supported mappers
+* Auto detected: F8, FA, F6, F4, F0
+* Manual set through file extension(ex: my_game.E0) : E0, FE, 3F 
+* SuperChip (128b RAM) must be enabled before load the game if required.
+
 ### Original readme
 A2601 An FPGA-based clone of the Atari 2600 video game console (Release 0.1.0)
 

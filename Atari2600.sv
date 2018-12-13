@@ -123,7 +123,9 @@ assign VIDEO_ARY = status[8] ? 8'd9  : 8'd3;
 localparam CONF_STR = {
 	"ATARI2600;;",
 	"-;",
-	"F,A26BIN;",
+	"F,A26BIN?? ;",
+	"O9,SuperChip,Disable,Enable;",
+	"-;",
 	"O1,Video standard,NTSC,PAL;",
 	"O2,Video mode,Color,Mono;",
 	"O8,Aspect ratio,4:3,16:9;", 
@@ -178,6 +180,7 @@ wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_dout;
 wire        ioctl_download;
 wire  [7:0] ioctl_index; 
+wire [31:0] ioctl_file_ext;
 
 wire        forced_scandoubler;
 
@@ -207,6 +210,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_dout(ioctl_dout),
 	.ioctl_download(ioctl_download),
 	.ioctl_index(ioctl_index),
+	.ioctl_file_ext(ioctl_file_ext),
 
 	.sd_lba(0),
 	.sd_rd(0),
@@ -228,6 +232,22 @@ ram ram
 	.rdaddress(ram_addr),
 	.q(ram_data)
 );
+
+reg [3:0] force_bs = 0;
+reg sc = 0;
+always @(posedge clk_sys) begin
+	reg       old_download;
+
+	old_download <= ioctl_download;
+	if(~old_download & ioctl_download) begin
+		force_bs <= 0;
+		sc <= status[9];
+		if (ioctl_file_ext[23:0] == ".E0") force_bs <= 4;
+		if (ioctl_file_ext[23:0] == ".FE") force_bs <= 3;
+		if (ioctl_file_ext[23:0] == ".3F") force_bs <= 5;
+	end
+end
+
 
 wire [4:0] audio;
 assign AUDIO_R = {3{audio}};
@@ -277,6 +297,8 @@ A2601top A2601top
 	.p_select(~(joy_0[8] | joy_1[8])),
 	.p_color(~status[2]),
 
+	.sc(sc),
+	.force_bs(force_bs),
 	.cart_size(ioctl_addr[19:0]),
 	.ram_addr(ram_addr),
 	.ram_data(ram_data),
@@ -310,7 +332,7 @@ assign VGA_F1 = 0;
 assign CLK_VIDEO = clk_sys;
 assign VGA_SL = sl[1:0];
 
-video_mixer #(.LINE_LENGTH(300)) video_mixer
+video_mixer #(.LINE_LENGTH(250)) video_mixer
 (
 	.*,
 	.ce_pix(ce_pix),
