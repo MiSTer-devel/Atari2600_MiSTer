@@ -48,6 +48,8 @@ module emu
 	output        VGA_HS,
 	output        VGA_VS,
 	output        VGA_DE,    // = ~(VBlank | HBlank)
+	output        VGA_F1,
+	output [1:0]  VGA_SL,
 
 	output        LED_USER,  // 1 - ON, 0 - OFF.
 
@@ -94,9 +96,17 @@ module emu
 	output        SDRAM_nCS,
 	output        SDRAM_nCAS,
 	output        SDRAM_nRAS,
-	output        SDRAM_nWE
+	output        SDRAM_nWE,
+
+	input         UART_CTS,
+	output        UART_RTS,
+	input         UART_RXD,
+	output        UART_TXD,
+	output        UART_DTR,
+	input         UART_DSR
 );
 
+assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = '0;
 assign {SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 6'b111111;
 assign SDRAM_DQ = 'Z;
@@ -117,7 +127,7 @@ localparam CONF_STR = {
 	"O1,Video standard,NTSC,PAL;",
 	"O2,Video mode,Color,Mono;",
 	"O8,Aspect ratio,4:3,16:9;", 
-	"O56,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
+	"O57,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
 	"O3,Difficulty P1,A,B;",
 	"O4,Difficulty P2,A,B;",
@@ -139,14 +149,12 @@ pll pll
 	.locked(locked)
 );
 
-reg ce_vid;
-reg ce_pp;
+reg ce_pix;
 always @(negedge clk_sys) begin
 	reg [3:0] div;
 
 	div <= div + 1'd1;
-	ce_vid <= !div;
-	ce_pp <= scandoubler ? !div[0] : !div[1:0];
+	ce_pix <= !div;
 end
 
 wire reset = RESET | status[0] | ~initReset_n | buttons[1] | ioctl_download;
@@ -231,7 +239,7 @@ A2601top A2601top
 (
 	.reset(reset),
 	.clk(clk_sys),
-	.clk_vid(clk_sys & ce_vid),
+	.clk_vid(clk_sys & ce_pix),
 
 	.audio(audio),
 
@@ -294,20 +302,21 @@ always @(posedge clk_sys) begin
 	end
 end
 
-wire [1:0] scale = status[6:5];
+wire [2:0] scale = status[7:5];
+wire [2:0] sl = scale ? scale - 1'd1 : 3'd0;
+wire       scandoubler = scale || forced_scandoubler;
 
+assign VGA_F1 = 0;
 assign CLK_VIDEO = clk_sys;
-assign CE_PIXEL = ce_pp;
-
-wire scandoubler = (scale || forced_scandoubler);
+assign VGA_SL = sl[1:0];
 
 video_mixer #(.LINE_LENGTH(300)) video_mixer
 (
 	.*,
-	.ce_pix(ce_vid),
-	.ce_pix_out(),
+	.ce_pix(ce_pix),
+	.ce_pix_out(CE_PIXEL),
 
-	.scanlines({scale == 3, scale == 2}),
+	.scanlines(0),
 	.hq2x(scale==1),
 	.mono(0),
 
