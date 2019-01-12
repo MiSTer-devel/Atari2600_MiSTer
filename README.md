@@ -15,8 +15,8 @@
 * Mouse emulates analog paddles.
 
 ### Supported mappers
-* Auto detected: F8, FA, F6, F4, F0
-* Manual set through file extension(ex: my_game.E0) : E0, FE, 3F 
+* Auto detected: F8, FA, F6, F4
+* Manual set through file extension(ex: my_game.E0) : E0, FE, 3F, P2(PitFall II)
 * SuperChip (128b RAM) must be enabled before load the game if required.
 
 ### Original readme

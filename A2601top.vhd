@@ -75,7 +75,7 @@ entity A2601top is
 		p_color   : in std_logic;
 
 		sc        : in std_logic; --SuperChip enable
-		force_bs  : in std_logic_vector(2 downto 0); -- forced bank switch type
+		force_bs  : in std_logic_vector(3 downto 0); -- forced bank switch type
 		rom_a     : out std_logic_vector(14 downto 0);
 		rom_do    : in std_logic_vector(7 downto 0);
 		rom_size  : in std_logic_vector(16 downto 0);
@@ -118,9 +118,9 @@ architecture arch of A2601top is
     signal sc_r: std_logic;
     signal sc_d_in: std_logic_vector(7 downto 0);
     signal sc_d_out: std_logic_vector(7 downto 0);
-    signal sc_a: std_logic_vector(6 downto 0);
+    signal sc_a: std_logic_vector(7 downto 0);
 
-    subtype bss_type is std_logic_vector(2 downto 0);
+    subtype bss_type is std_logic_vector(3 downto 0);
 
     signal bank: std_logic_vector(3 downto 0) := "0000";
     signal tf_bank: std_logic_vector(1 downto 0);
@@ -138,14 +138,15 @@ architecture arch of A2601top is
 	signal cv:  std_logic_vector(7 downto 0);
 	signal au:  std_logic_vector(4 downto 0);
 	
-    constant BANK00: bss_type := "000";
-    constant BANKF8: bss_type := "001";
-    constant BANKF6: bss_type := "010";
-    constant BANKFE: bss_type := "011";
-    constant BANKE0: bss_type := "100";
-    constant BANK3F: bss_type := "101";
-    constant BANKF4: bss_type := "110";
-    constant BANKP2: bss_type := "111";
+    constant BANK00: bss_type := "0000";
+    constant BANKF8: bss_type := "0001";
+    constant BANKF6: bss_type := "0010";
+    constant BANKFE: bss_type := "0011";
+    constant BANKE0: bss_type := "0100";
+    constant BANK3F: bss_type := "0101";
+    constant BANKF4: bss_type := "0110";
+    constant BANKP2: bss_type := "0111";
+    constant BANKFA: bss_type := "1000";
 
     signal bss:  bss_type := BANK00; 	--bank switching method
   
@@ -258,13 +259,14 @@ begin
 
     audio <= std_logic_vector(auv0 + auv1);
 
-    sc_ram128x8: work.ram128x8
+    sc_ram: work.ram256x8
         port map(sc_clk, sc_r, sc_d_in, sc_d_out, sc_a);
 
     sc_clk <= clk;
-    sc_r <= '0' when cpu_a(12 downto 7) = "100000" else '1';
+    sc_r <= '0' when cpu_a(12 downto 8) = "10000" and bss = BANKFA else
+			'0' when cpu_a(12 downto 7) = "100000" and sc = '1' else '1';
     sc_d_in <= cpu_d;
-    sc_a <= cpu_a(6 downto 0);
+    sc_a <= cpu_a(7 downto 0) when bss = BANKFA else '0'&cpu_a(6 downto 0);
 
     -- ROM and SC output
     process(cpu_a, rom_do, sc_d_out, sc, bss, DpcFlags, DpcRandom, DpcMusicModes, DpcMusicFlags, soundAmplitudes)
@@ -300,6 +302,10 @@ begin
         elsif (bss = BANKP2 and cpu_a >= "1" & x"038" and cpu_a <= "1" & x"03f") then -- DPC READ -  0x1038 to 0x103f (Flags)
             cpu_d <= DpcFlags(to_integer(unsigned(cpu_a(2 downto 0))));
 
+        elsif (cpu_a(12 downto 8) = "10001" and bss = BANKFA) then
+            cpu_d <= sc_d_out;
+        elsif (cpu_a(12 downto 8) = "10000" and bss = BANKFA) then
+            cpu_d <= "ZZZZZZZZ";
         elsif (cpu_a(12 downto 7) = "100001" and sc = '1') then
             cpu_d <= sc_d_out;
         elsif (cpu_a(12 downto 7) = "100000" and sc = '1') then
@@ -323,6 +329,7 @@ begin
     rom_a <=
 		  "000" & cpu_a(11 downto 0) when bss = BANK00 else
 		  "00" & bank(0) & cpu_a(11 downto 0) when bss = BANKF8 else
+		  '0' & bank(1 downto 0) & cpu_a(11 downto 0) when bss = BANKFA else
 		  '0' & bank(1 downto 0) & cpu_a(11 downto 0) when bss = BANKF6 else
           bank(2 downto 0) & cpu_a(11 downto 0) when bss = BANKF4 else
 		  "00" & bank(0) & cpu_a(11 downto 0) when bss = BANKFE else
@@ -344,6 +351,14 @@ begin
                 e0_bank2 <= "000";
             else
                 case bss is
+                    when BANKFA =>
+                        if (cpu_a = "1" & X"FF8") then
+                            bank <= "0000";
+                        elsif (cpu_a = "1" & X"FF9") then
+                            bank <= "0001";
+                        elsif (cpu_a = "1" & X"FFA") then
+                            bank <= "0010";
+                        end if;
                     when BANKF8 =>
                         if (cpu_a = "1" & X"FF8") then
                             bank <= "0000";
@@ -503,6 +518,8 @@ begin
         bss <= BANK00;
       elsif(rom_size <= '0'&x"2000") then -- 8k and less
         bss <= BANKF8;
+      elsif(rom_size <= '0'&x"03000") then -- 12k and less
+        bss <= BANKFA;
       elsif(rom_size <= '0'&x"4000") then -- 16k and less
         bss <= BANKF6;
       elsif(rom_size <= '0'&x"8000") then -- 32k and less
