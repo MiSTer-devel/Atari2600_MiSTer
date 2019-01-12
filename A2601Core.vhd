@@ -79,7 +79,7 @@ begin
 
     riot_A6532: work.A6532
         port map(clk, ph2, read, riot_rs, riot_cs,
-            riot_irq, d, pa, pb, riot_pa7, riot_a);
+            open, d, pa, pb, '0', riot_a);
 
     tia_inst: work.TIA
         port map(clk_vid, clk, tia_cs, read, tia_a, d,

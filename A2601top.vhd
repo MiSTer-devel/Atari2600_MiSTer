@@ -184,10 +184,10 @@ architecture arch of A2601top is
 begin
 
 	ms_A2601: work.A2601
-        port map(clk_vid, clk, rst, cpu_d, cpu_a, cpu_r, pa, pb, 
+        port map(clk_vid, clk, rst, cpu_d, cpu_a, open, pa, pb, 
 				paddle_0, paddle_1, paddle_ena1, paddle_2, paddle_3, paddle_ena2,
 				inpt4, inpt5, open, vsyn, hsyn, O_HBLANK, O_VBLANK, rgbx2, 
-				au0, au1, av0, av1, ph0, ph2, pal);
+				au0, au1, av0, av1, ph0, open, pal);
 	
 	
   O_VIDEO_R <= rgbx2(23 downto 18);

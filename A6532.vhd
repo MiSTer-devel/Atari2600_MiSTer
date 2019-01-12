@@ -204,8 +204,8 @@ begin
                 if (rs = '1') then
                     if a(2) = '0' then
                         case a(1 downto 0) is
-                            when "00" =>
-                                pa_reg <= d;
+                            --when "00" =>
+                            --    pa_reg <= d;
                             when "01" =>
                                 pa_ddr <= d;
                             when "10" =>

@@ -761,7 +761,7 @@ begin
     hh0_edge <= '1' when (h_cntr_out = "01") else '0';
     hh0 <= '1' when (h_cntr_out = "00") else '0';
     hh1_edge <= '1' when (h_cntr_out = "10") else '0';
-    hh1 <= '1' when (h_cntr_out = "11") else '0';
+    --hh1 <= '1' when (h_cntr_out = "11") else '0';
 
     aud0: work.audio port map(clk, au_cnt, a0_freq, a0_ctrl, au0);
     aud1: work.audio port map(clk, au_cnt, a1_freq, a1_ctrl, au1);
@@ -784,9 +784,9 @@ begin
                         hsync <= '1';
                     when "110111" =>
                         hsync <= '0';
-                        cburst <= '1';
-                    when "001111" =>
-                        cburst <= '0';
+                        --cburst <= '1';
+                    --when "001111" =>
+                    --    cburst <= '0';
                     when "111001" =>
                         pf_cnt <= '1';
                     when "011100" =>
@@ -993,7 +993,7 @@ begin
                         pf_gr(19 downto 12) <= d;
                     when A_CTRLPF =>
                         pf_reflect <= d(0);
-                        pf_score <= d(1);
+                        --pf_score <= d(1);
                         pf_priority <= d(2);
                         bl_size <= d(5 downto 4);
                     when A_NUSIZ0 =>
