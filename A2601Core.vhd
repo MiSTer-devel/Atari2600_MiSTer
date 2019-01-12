@@ -22,8 +22,8 @@ use ieee.std_logic_1164.all;
 
 entity A2601 is
 	port(
-		clk: in std_logic;
 		clk_vid: in std_logic;
+		clk: in std_logic;
 		rst: in std_logic;
 		d: inout std_logic_vector(7 downto 0);
 		a: out std_logic_vector(12 downto 0);
@@ -49,68 +49,12 @@ entity A2601 is
 		av0: out std_logic_vector(3 downto 0);
 		av1: out std_logic_vector(3 downto 0);
 		ph0_out: out std_logic;
-		ph1_out: out std_logic;
+		ph2_out: out std_logic;
 		pal: in std_logic
 	);
 end A2601;
 
 architecture arch of A2601 is
-
-    component A6507 is
-        port(clk: in std_logic;
-             rst: in std_logic;
-             rdy: in std_logic;
-             d: inout std_logic_vector(7 downto 0);
-             ad: out std_logic_vector(12 downto 0);
-             r: out std_logic);
-    end component;
-
-    component A6532 is
-        port(clk: in std_logic;
-             r: in std_logic;
-             rs: in std_logic;
-             cs: in std_logic;
-             irq: out std_logic;
-             d: inout std_logic_vector(7 downto 0);
-             pa: inout std_logic_vector(7 downto 0);
-             pb: inout std_logic_vector(7 downto 0);
-             pa7: in std_logic;
-             a: in std_logic_vector(6 downto 0));
-    end component;
-
-    component TIA is
-		port(
-			clk_sys: in std_logic;
-			clk: in std_logic;			
-         cs: in std_logic;
-         r: in std_logic;
-         a: in std_logic_vector(5 downto 0);
-         d: inout std_logic_vector(7 downto 0);
-         colu: out std_logic_vector(6 downto 0);
-         hsyn: out std_logic;
-         vsyn: out std_logic;
-			ohblank: out std_logic;
-			ovblank: out std_logic;
-         rgbx2: out std_logic_vector(23 downto 0);
-         rdy: out std_logic;
-         ph0: out std_logic;
-         ph1: out std_logic;
-         au0: out std_logic;
-         au1: out std_logic;
-         av0: out std_logic_vector(3 downto 0);
-         av1: out std_logic_vector(3 downto 0);
-         paddle_0: in std_logic_vector(7 downto 0);
-         paddle_1: in std_logic_vector(7 downto 0);
-			paddle_ena1: in std_logic;
-         paddle_2: in std_logic_vector(7 downto 0);
-         paddle_3: in std_logic_vector(7 downto 0);
-         paddle_ena2: in std_logic;
-         inpt4: in std_logic;
-         inpt5: in std_logic;
-         pal: in std_logic := '0'
-		);
-    end component;
-
     signal rdy: std_logic;
     signal cpu_a: std_logic_vector(12 downto 0);
     signal read: std_logic;
@@ -122,24 +66,24 @@ architecture arch of A2601 is
     signal tia_cs: std_logic;
     signal tia_a: std_logic_vector(5 downto 0);
     signal ph0: std_logic;
-    signal ph1: std_logic;	 
+    signal ph2: std_logic;
 begin
 
     ph0_out <= ph0;
-    ph1_out <= ph1;
+    ph2_out <= ph2;
 
     r <= read;
 
-    cpu_A6507: A6507
+    cpu_A6507: work.A6507
         port map(ph0, rst, rdy, d, cpu_a, read);
 
-    riot_A6532: A6532
-        port map(ph1, read, riot_rs, riot_cs,
+    riot_A6532: work.A6532
+        port map(clk, ph2, read, riot_rs, riot_cs,
             riot_irq, d, pa, pb, riot_pa7, riot_a);
 
-    tia_inst: TIA
-        port map(clk, clk_vid, tia_cs, read, tia_a, d,
-            colu, hsyn, vsyn, hblank, vblank, rgbx2, rdy, ph0, ph1,
+    tia_inst: work.TIA
+        port map(clk_vid, clk, tia_cs, read, tia_a, d,
+            colu, hsyn, vsyn, hblank, vblank, rgbx2, rdy, ph0, ph2,
             au0, au1, av0, av1,
 				paddle_0, paddle_1, paddle_ena1, 
 				paddle_2, paddle_3, paddle_ena2,

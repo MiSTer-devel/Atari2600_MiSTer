@@ -140,7 +140,7 @@ localparam CONF_STR = {
 ////////////////////   CLOCKS   ///////////////////
 
 wire locked;
-wire clk_sys;
+wire clk_sys,clk_cpu;
 wire clk_mem;
 
 pll pll
@@ -148,12 +148,13 @@ pll pll
 	.refclk(CLK_50M),
 	.rst(0),
 	.outclk_0(clk_sys),
+	.outclk_1(clk_cpu),
 	.locked(locked)
 );
 
 reg ce_pix;
 always @(negedge clk_sys) begin
-	reg [3:0] div;
+	reg [2:0] div;
 
 	div <= div + 1'd1;
 	ce_pix <= !div;
@@ -220,20 +221,22 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_wait(0)
 );
 
-wire [15:0] ram_addr;
-wire  [7:0] ram_data;
+wire [15:0] rom_addr;
+wire  [7:0] rom_data;
 
-ram ram
+dpram #(16) rom
 (
 	.clock(clk_sys),
-	.data(ioctl_dout),
-	.wraddress(ioctl_addr[15:0]),
-	.wren(ioctl_wr),
-	.rdaddress(ram_addr),
-	.q(ram_data)
+
+	.data_a(ioctl_dout),
+	.address_a(ioctl_addr[15:0]),
+	.wren_a(ioctl_wr),
+
+	.address_b(rom_addr),
+	.q_b(rom_data)
 );
 
-reg [3:0] force_bs = 0;
+reg [2:0] force_bs = 0;
 reg sc = 0;
 always @(posedge clk_sys) begin
 	reg       old_download;
@@ -245,9 +248,9 @@ always @(posedge clk_sys) begin
 		if (ioctl_file_ext[23:0] == ".E0") force_bs <= 4;
 		if (ioctl_file_ext[23:0] == ".FE") force_bs <= 3;
 		if (ioctl_file_ext[23:0] == ".3F") force_bs <= 5;
+		if (ioctl_file_ext[23:0] == ".P2") force_bs <= 7; // Pitfall II
 	end
 end
-
 
 wire [4:0] audio;
 assign AUDIO_R = {3{audio}};
@@ -258,8 +261,8 @@ assign AUDIO_MIX = 0;
 A2601top A2601top
 (
 	.reset(reset),
-	.clk(clk_sys),
-	.clk_vid(clk_sys & ce_pix),
+	.clk(clk_cpu),
+	.clk_vid(clk_sys),
 
 	.audio(audio),
 
@@ -299,9 +302,9 @@ A2601top A2601top
 
 	.sc(sc),
 	.force_bs(force_bs),
-	.cart_size(ioctl_addr[19:0]),
-	.ram_addr(ram_addr),
-	.ram_data(ram_data),
+	.rom_size(ioctl_addr[16:0]),
+	.rom_a(rom_addr),
+	.rom_do(rom_data),
 
 	.pal(status[1]),
 	.p_dif(status[4:3])
@@ -331,6 +334,9 @@ wire       scandoubler = scale || forced_scandoubler;
 assign VGA_F1 = 0;
 assign CLK_VIDEO = clk_sys;
 assign VGA_SL = sl[1:0];
+assign VGA_DE = de & ~(VGA_VS|VGA_HS);
+
+wire de;
 
 video_mixer #(.LINE_LENGTH(250)) video_mixer
 (
@@ -342,6 +348,7 @@ video_mixer #(.LINE_LENGTH(250)) video_mixer
 	.hq2x(scale==1),
 	.mono(0),
 
+	.VGA_DE(de),
 	.R({R,R[5:4]}),
 	.G({G,G[5:4]}),
 	.B({B,B[5:4]})

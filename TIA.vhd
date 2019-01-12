@@ -24,6 +24,8 @@ entity lfsr6 is
    port(clk: in std_logic;
           prst: in std_logic;
           cnt: in std_logic;
+          preload: in std_logic;
+          i: in  std_logic_vector(5 downto 0);
           o: out std_logic_vector(5 downto 0)
        );
 end lfsr6;
@@ -39,8 +41,8 @@ begin
 
     process(clk, prst)  
     begin           
-
-		  if (clk'event and clk = '1') then           
+        
+        if (clk'event and clk = '1') then           
             if (prst = '1' and prst_l = '0') then 
                 prst_l <= '1'; 
             elsif (cnt = '1') then                      
@@ -48,11 +50,14 @@ begin
             end if;             
         end if;             
         
-        if (clk'event and clk = '1') then           
+        if (clk'event and clk = '1') then
             if (cnt = '1') then
-                if (prst_l = '1') then 
+                if preload = '1' then
+--                    d <= (i(0) xnor i(1)) & i(5 downto 1);
+                    d <= i;
+                elsif (prst_l = '1') then 
                     d <= "000000";                                      
-                else 
+                else
                     d <= (d(0) xnor d(1)) & d(5 downto 1);
                 end if;                             
             end if;
@@ -67,7 +72,9 @@ use ieee.std_logic_1164.all;
 
 entity cntr2 is
    port(clk: in std_logic;
-          rst: in std_logic;    
+          rst: in std_logic;
+          preload: in std_logic;
+          preload_val: in std_logic_vector(1 downto 0);
           en: in std_logic;       
           o: out std_logic_vector(1 downto 0)
        );
@@ -86,20 +93,30 @@ begin
 --      if (rst = '1') then 
 --          d <= "00";
         if (clk'event and clk = '1') then       
-            if (rst = '1') then 
+            if (rst = '1') then
                 d <= "00";
             elsif (en = '1') then 
-                case d is 
-                    when "00" => d <= "10";
-                    when "10" => d <= "11";                                             
-                    when "11" => d <= "01";
-                    when "01" => d <= "00";
-                    when others => null;
-                end case;
+                if preload = '1' then
+                    case preload_val is 
+                        when "00" => d <= "10";
+                        when "10" => d <= "11";
+                        when "11" => d <= "01";
+                        when "01" => d <= "00";
+                        when others => null;
+                    end case;
+                else
+                    case d is
+                        when "00" => d <= "10";
+                        when "10" => d <= "11";
+                        when "11" => d <= "01";
+                        when "01" => d <= "00";
+                        when others => null;
+                    end case;
+                end if;
             end if;
         end if;
     end process;
-    
+
 end arch;
 
 library ieee;
@@ -224,41 +241,17 @@ entity player is
           grpnew: in std_logic_vector(7 downto 0);
           grpold: in std_logic_vector(7 downto 0);
           vdel: in std_logic;
-          pix: out std_logic
+          pix: out std_logic;
+          lfsr_out: buffer std_logic_vector(5 downto 0);
+          cntr_out: buffer std_logic_vector(1 downto 0)
        );
 end player;
 
 architecture arch of player is 
 
-    component cntr2 is
-        port(clk: in std_logic;
-              rst: in std_logic;
-              en: in std_logic;
-              o: out std_logic_vector(1 downto 0)
-             );
-    end component;
-
-    component cntr3 is
-        port(clk: in std_logic;
-             rst: in std_logic;
-              en: in std_logic;
-              o: out std_logic_vector(2 downto 0)
-             );
-    end component;
-    
-    component lfsr6 is
-        port(clk: in std_logic;
-              prst: in std_logic;
-              cnt: in std_logic;
-              o: out std_logic_vector(5 downto 0)
-             );
-    end component;
-
-    signal lfsr_out: std_logic_vector(5 downto 0);
     signal lfsr_rst: std_logic;
     signal lfsr_cnt: std_logic;
 
-    signal cntr_out: std_logic_vector(1 downto 0);
     signal cntr_rst: std_logic;
     signal cntr_en: std_logic;
     
@@ -279,9 +272,9 @@ architecture arch of player is
 
 begin
 
-    lfsr: lfsr6 port map(clk, lfsr_rst, lfsr_cnt, lfsr_out);
-    cntr: cntr2 port map(clk, cntr_rst, cntr_en, cntr_out);
-    scan: cntr3 port map(clk, '0', scan_cnt, scan_out); 
+    lfsr: work.lfsr6 port map(clk, lfsr_rst, lfsr_cnt, '0', (others=>'0'), lfsr_out);
+    cntr: work.cntr2 port map(clk, cntr_rst, '0', (others=>'0'), cntr_en, cntr_out);
+    scan: work.cntr3 port map(clk, '0', scan_cnt, scan_out); 
 
     ph0 <= '1' when (cntr_out = "00") else '0';
     ph1_edge <= '1' when (cntr_out = "10") else '0';
@@ -352,7 +345,10 @@ use ieee.std_logic_1164.all;
 
 entity missile is
    port(clk: in std_logic;
-          prst: in std_logic;       
+          prst: in std_logic;
+          preload: in std_logic;
+          lfsr_preload_val: in std_logic_vector(5 downto 0);
+          cntr_preload_val: in std_logic_vector(1 downto 0);
           count: in std_logic;        
           enable: in std_logic;
           nusiz: in std_logic_vector(2 downto 0);
@@ -363,22 +359,6 @@ end missile;
 
 architecture arch of missile is 
 
-    component cntr2 is
-        port(clk: in std_logic;
-              rst: in std_logic;
-              en: in std_logic;           
-              o: out std_logic_vector(1 downto 0)
-             );
-    end component;
-
-    component lfsr6 is
-        port(clk: in std_logic;
-              prst: in std_logic;
-              cnt: in std_logic;
-              o: out std_logic_vector(5 downto 0)
-             );
-    end component;
-    
     signal lfsr_out: std_logic_vector(5 downto 0);
     signal lfsr_rst: std_logic;
     signal lfsr_cnt: std_logic;
@@ -395,8 +375,8 @@ architecture arch of missile is
     
 begin
 
-    lfsr: lfsr6 port map(clk, lfsr_rst, lfsr_cnt, lfsr_out);
-    cntr: cntr2 port map(clk, cntr_rst, cntr_en, cntr_out); 
+    lfsr: work.lfsr6 port map(clk, lfsr_rst, lfsr_cnt, preload, lfsr_preload_val, lfsr_out);
+    cntr: work.cntr2 port map(clk, cntr_rst, preload, cntr_preload_val, cntr_en, cntr_out); 
         
     ph1_edge <= '1' when (cntr_out = "10") else '0';
     ph1 <= '1' when (cntr_out = "11") else '0';
@@ -443,33 +423,40 @@ use ieee.numeric_std.all;
 
 entity paddle is
    port(clk: in std_logic;
+        hsync: in std_logic;
         value: in std_logic_vector(7 downto 0);
         rst: in std_logic;       
         o: out std_logic
      );
 end paddle;
 
-architecture arch of paddle is 
-begin
-	process(clk, rst, value)
-		variable cnt: integer range 0 to 190;
-	begin 
-		if( rst = '1' ) then
-			-- map -128..127 -> 190..0
-			cnt := to_integer(96 + signed(value)/2 + signed(value)/4);
-	   elsif (clk'event and clk = '1') then
-			if(cnt /= 190) then
-				cnt := cnt + 1;
-			end if;
-      end if;
+architecture arch of paddle is
 
-		-- return 1 if counter has "discharged"
-		if(cnt = 190) then
-			o <= '1';
-		else
-			o <= '0';
-		end if;
-	end process;
+signal hsync_d: std_logic;
+
+begin
+    process(clk, rst, hsync)
+        variable cnt: integer range 0 to 190;
+    begin
+        if (clk'event and clk = '1') then
+            hsync_d <= hsync;
+            if( rst = '1' ) then
+                -- map -128..127 -> 190..0
+                cnt := to_integer(96 + signed(value)/2 + signed(value)/4);
+            elsif (hsync_d = '0' and hsync = '1') then
+                if(cnt /= 190) then
+                    cnt := cnt + 1;
+                end if;
+            end if;
+        end if;
+
+        -- return 1 if counter has "discharged"
+        if(cnt = 190) then
+            o <= '1';
+        else
+            o <= '0';
+        end if;
+    end process;
 end arch;
 
 library ieee;
@@ -489,22 +476,6 @@ end ball;
 
 architecture arch of ball is 
 
-    component cntr2 is
-        port(clk: in std_logic;
-              rst: in std_logic;
-              en: in std_logic;           
-              o: out std_logic_vector(1 downto 0)
-             );
-    end component;
-
-    component lfsr6 is
-        port(clk: in std_logic;           
-              prst: in std_logic;
-              cnt: in std_logic;
-              o: out std_logic_vector(5 downto 0)
-             );
-    end component;
-    
     signal lfsr_out: std_logic_vector(5 downto 0);
     signal lfsr_rst: std_logic;
     signal lfsr_cnt: std_logic;
@@ -522,8 +493,8 @@ architecture arch of ball is
     
 begin
 
-    lfsr: lfsr6 port map(clk, lfsr_rst, lfsr_cnt, lfsr_out);
-    cntr: cntr2 port map(clk, cntr_rst, cntr_en, cntr_out);
+    lfsr: work.lfsr6 port map(clk, lfsr_rst, lfsr_cnt, '0', (others=>'0'), lfsr_out);
+    cntr: work.cntr2 port map(clk, cntr_rst, '0', (others=>'0'), cntr_en, cntr_out);
     
     ph1_edge <= '1' when (cntr_out = "10") else '0';
     ph1 <= '1' when (cntr_out = "11") else '0';
@@ -599,13 +570,12 @@ end arch;
 library ieee;
 use ieee.std_logic_1164.all;       
 use ieee.numeric_std.all;      
-
 use work.TIA_common.all;
 
 entity TIA is
 	port
 	(
-		clk_sys: in std_logic;
+		vid_clk: in std_logic;
 		clk: in std_logic;
 		cs: in std_logic;
 		r: in std_logic;
@@ -619,7 +589,7 @@ entity TIA is
 		rgbx2: out std_logic_vector(23 downto 0);
 		rdy: out std_logic;
 		ph0: out std_logic;
-		ph1: out std_logic;
+         ph2: out std_logic;
 		au0: out std_logic;
 		au1: out std_logic;
 		av0: out std_logic_vector(3 downto 0);
@@ -637,105 +607,6 @@ entity TIA is
 end TIA;
 
 architecture arch of TIA is
-
-	COMPONENT VGA_SCANDBL
-	PORT(
-		I : IN std_logic_vector(6 downto 0);
-		I_HSYNC : IN std_logic;
-		I_VSYNC : IN std_logic;
-		CLK : IN std_logic;
-		CLK_X2 : IN std_logic;          
-		O : OUT std_logic_vector(6 downto 0);
-		O_HSYNC : OUT std_logic;
-		O_VSYNC : OUT std_logic
-		);
-	END COMPONENT;	
-	
-	COMPONENT VGAColorTable
-	PORT(
-		clk : IN std_logic;
-		lum : IN std_logic_vector(3 downto 0);
-		hue : IN std_logic_vector(3 downto 0);
-		mode : IN std_logic_vector(1 downto 0);          
-		outColor : OUT std_logic_vector(23 downto 0)
-		);
-	END COMPONENT;	
-
-    component cntr2 is
-        port(clk: in std_logic;
-             rst: in std_logic;
-             en: in std_logic;
-             o: out std_logic_vector(1 downto 0)
-            );
-    end component;
-
-    component lfsr6 is
-        port(clk: in std_logic;
-              prst: in std_logic;
-              cnt: in std_logic;
-              o: out std_logic_vector(5 downto 0)
-             );
-    end component;
-
-    component audio is
-        port(clk: in std_logic;
-             cnt: in std_logic;
-             freq: in std_logic_vector(4 downto 0);
-             ctrl: in std_logic_vector(3 downto 0);
-             ao: out std_logic
-            );
-    end component;
-
-    component player is
-        port(clk: in std_logic;
-             prst: in std_logic;
-             count: in std_logic;
-             nusiz: in std_logic_vector(2 downto 0);
-             reflect: in std_logic;
-             grpnew: in std_logic_vector(7 downto 0);
-             grpold: in std_logic_vector(7 downto 0);
-             vdel: in std_logic;
-             pix: out std_logic
-            );
-    end component;
-
-    component missile is
-        port(clk: in std_logic;
-              prst: in std_logic;
-              count: in std_logic;
-              enable: in std_logic;
-              nusiz: in std_logic_vector(2 downto 0);
-              size: in std_logic_vector(1 downto 0);
-              pix: out std_logic
-             );
-    end component;
-
-    component ball is
-        port(clk: in std_logic;
-             prst: in std_logic;
-             count: in std_logic;
-             ennew: in std_logic;
-             enold: in std_logic;
-             vdel: in std_logic;
-             size: in std_logic_vector(1 downto 0);
-             pix: out std_logic
-            );
-    end component;
-
-    component mux20 is
-        port(i: in std_logic_vector(19 downto 0);
-             a: in std_logic_vector(4 downto 0);
-             o: out std_logic
-            );
-    end component;
-
-	 component paddle is
-			port(clk: in std_logic;
-				  value: in std_logic_vector(7 downto 0);
-				  rst: in std_logic;       
-				  o: out std_logic
-			);
-    end component;
 
     signal h_lfsr_out: std_logic_vector(5 downto 0);
     signal h_lfsr_rst: std_logic;
@@ -763,6 +634,8 @@ architecture arch of TIA is
     signal p0_hmove: std_logic_vector(3 downto 0);
     signal p0_count: std_logic;
     signal p0_ec: std_logic := '0';
+    signal p0_lfsr: std_logic_vector(5 downto 0);
+    signal p0_cntr: std_logic_vector(1 downto 0);
 
     signal p1_rst: std_logic;
     signal p1_nusiz: std_logic_vector(2 downto 0) := "000";
@@ -775,6 +648,8 @@ architecture arch of TIA is
     signal p1_hmove: std_logic_vector(3 downto 0);
     signal p1_count: std_logic;
     signal p1_ec: std_logic := '0';
+    signal p1_lfsr: std_logic_vector(5 downto 0);
+    signal p1_cntr: std_logic_vector(1 downto 0);
 
     signal m0_rst: std_logic;
     signal m0_enable: std_logic;
@@ -783,6 +658,7 @@ architecture arch of TIA is
     signal m0_hmove: std_logic_vector(3 downto 0);
     signal m0_count: std_logic;
     signal m0_ec: std_logic := '0';
+    signal m0_resp0: std_logic := '0';
 
     signal m1_rst: std_logic;
     signal m1_enable: std_logic;
@@ -791,6 +667,7 @@ architecture arch of TIA is
     signal m1_hmove: std_logic_vector(3 downto 0);
     signal m1_count: std_logic;
     signal m1_ec: std_logic := '0';
+    signal m1_resp1: std_logic := '0';
 
     signal bl_rst: std_logic;
     signal bl_ennew: std_logic;
@@ -833,7 +710,8 @@ architecture arch of TIA is
 
     signal clk_dvdr: std_logic_vector(1 downto 0) := "01";
     signal phi0: std_logic := '0';
-    signal phi1: std_logic := '1';
+    signal phi2: std_logic := '1';
+    signal phi2_d: std_logic := '1';
 
     signal inpt45_len: std_logic := '0';
     signal inpt45_rst: std_logic;
@@ -850,7 +728,19 @@ architecture arch of TIA is
     signal hh1: std_logic;
     signal hh1_edge: std_logic;
 
+    --signal clk, clkx2: std_logic;
+
+    signal sync: std_logic;
+    signal blank: std_logic;
+
     signal int_colu: std_logic_vector(6 downto 0) := "0000000";
+    signal lum_lu: unsigned(7 downto 0);
+    signal col_lut_idx: std_logic_vector(7 downto 0);
+    signal col_lu: unsigned(7 downto 0);
+
+    signal vid_clk_dvdr: unsigned(2 downto 0) := "000";
+	 
+	  signal vga_colu: std_logic_vector(6 downto 0);
 
      signal inpt03_chg: std_logic;
 	  signal inpt0: std_logic;
@@ -859,22 +749,22 @@ architecture arch of TIA is
 	  signal inpt3: std_logic;
 
 begin
-    paddle0: paddle port map(hsync, paddle_0, inpt03_chg, inpt0);
-    paddle1: paddle port map(hsync, paddle_1, inpt03_chg, inpt1);
-    paddle2: paddle port map(hsync, paddle_2, inpt03_chg, inpt2);
-    paddle3: paddle port map(hsync, paddle_3, inpt03_chg, inpt3);
+    paddle0: work.paddle port map(clk, hsync, paddle_0, inpt03_chg, inpt0);
+    paddle1: work.paddle port map(clk, hsync, paddle_1, inpt03_chg, inpt1);
+    paddle2: work.paddle port map(clk, hsync, paddle_2, inpt03_chg, inpt2);
+    paddle3: work.paddle port map(clk, hsync, paddle_3, inpt03_chg, inpt3);
 
-    h_cntr: cntr2 port map(clk, h_cntr_rst, '1', h_cntr_out);
-    lfsr: lfsr6 port map(clk, h_lfsr_rst, h_lfsr_cnt, h_lfsr_out);
-    pf_mux: mux20 port map(pf_gr, std_logic_vector(pf_adr), pf_mux_out);
+    h_cntr: work.cntr2 port map(clk, h_cntr_rst, '0', (others=>'0'), '1', h_cntr_out);
+    lfsr: work.lfsr6 port map(clk, h_lfsr_rst, h_lfsr_cnt, '0', (others=>'0'), h_lfsr_out);
+    pf_mux: work.mux20 port map(pf_gr, std_logic_vector(pf_adr), pf_mux_out);
 
     hh0_edge <= '1' when (h_cntr_out = "01") else '0';
     hh0 <= '1' when (h_cntr_out = "00") else '0';
     hh1_edge <= '1' when (h_cntr_out = "10") else '0';
     hh1 <= '1' when (h_cntr_out = "11") else '0';
 
-    aud0: audio port map(clk, au_cnt, a0_freq, a0_ctrl, au0);
-    aud1: audio port map(clk, au_cnt, a1_freq, a1_ctrl, au1);
+    aud0: work.audio port map(clk, au_cnt, a0_freq, a0_ctrl, au0);
+    aud1: work.audio port map(clk, au_cnt, a1_freq, a1_ctrl, au1);
 
     av0 <= a0_vol;
     av1 <= a1_vol;
@@ -942,24 +832,36 @@ begin
         end if;
     end process;
 
+    vsyn <= vsync;
+    hsyn <= hsync;
+
     rdy <= '0' when (wsync = '1') else '1';
 
-    p0: player
+    p0: work.player
         port map(clk, p0_rst, p0_count, p0_nusiz, p0_reflect,
-                    p0_grpnew, p0_grpold, p0_vdel, p0_pix);
+                    p0_grpnew, p0_grpold, p0_vdel, p0_pix, p0_lfsr, p0_cntr);
 
-    p1: player
+    p1: work.player
         port map(clk, p1_rst, p1_count, p1_nusiz, p1_reflect,
-                    p1_grpnew, p1_grpold, p1_vdel, p1_pix);
+                    p1_grpnew, p1_grpold, p1_vdel, p1_pix, p1_lfsr, p1_cntr);
 
-    m0: missile
-        port map(clk, m0_rst, m0_count, m0_enable, p0_nusiz, m0_size, m0_pix);
+    m0: work.missile
+        port map(clk, m0_rst, m0_resp0, p0_lfsr, p0_cntr, m0_count, m0_enable and not m0_resp0, p0_nusiz, m0_size, m0_pix);
 
-    m1: missile
-        port map(clk, m1_rst, m1_count, m1_enable, p1_nusiz, m1_size, m1_pix);
+    m1: work.missile
+        port map(clk, m1_rst, m1_resp1, p1_lfsr, p1_cntr, m1_count, m1_enable and not m1_resp1, p1_nusiz, m1_size, m1_pix);
 
-    bl: ball
+    bl: work.ball
         port map(clk, bl_rst, bl_count, bl_ennew, bl_enold, bl_vdel, bl_size, bl_pix);
+
+    process(clk, h_lfsr_cnt)
+    begin
+        if (clk'event and clk = '1') then
+            if h_lfsr_out = "000000" then
+                bl_enold <= bl_ennew;
+            end if;
+        end if;
+    end process;
 
     pf_output: process(clk, h_lfsr_cnt)
     begin
@@ -999,7 +901,7 @@ begin
 
     inpt45_rst <= '1' when (a = A_VBLANK) and (r = '0') and (cs = '1') else '0';
 
-    process(clk, phi1, a, d, r, cs, cx, inpt45_len, inpt0, inpt1, inpt2, inpt3, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2)
+    process(clk, a, d, r, cs, cx, inpt45_len, inpt0, inpt1, inpt2, inpt3, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2)
     begin
         if (r = '1') and (cs = '1') then
             d(5 downto 0) <= "000000";
@@ -1073,8 +975,9 @@ begin
             d <= "ZZZZZZZZ";
         end if;
 
-        if (phi1'event and phi1 = '0') then
-            if (r = '0') and (cs = '1') then
+        if (clk'event and clk = '1') then
+            phi2_d <= phi2;
+            if (r = '0') and (cs = '1') and (phi2_d = '0' and phi2 = '1') then
                 case a is
                     when A_VSYNC =>
                         vsync <= d(1);
@@ -1120,7 +1023,6 @@ begin
                     when A_ENAM1 =>
                         m1_enable <= d(1);
                     when A_ENABL =>
-                        bl_enold <= bl_ennew;
                         bl_ennew <= d(1);
                     when A_GRP0 =>
                         p1_grpold <= p1_grpnew;
@@ -1158,6 +1060,10 @@ begin
                         a0_vol <= d(3 downto 0);
                     when A_AUDV1 =>
                         a1_vol <= d(3 downto 0);
+                    when A_RESMP0 =>
+                        m0_resp0 <= d(1);
+                    when A_RESMP1 =>
+                        m1_resp1 <= d(1);
                     when others => null;
                 end case;
             end if;
@@ -1325,29 +1231,26 @@ begin
     end process;
 
     ph0 <= phi0;
-    ph1 <= phi1;
+    ph2 <= phi2;
 
     process(clk)
     begin
         if (clk'event and clk = '1') then
+            phi2<=phi0;
             if (h_lfsr_out = "010100" and hh1_edge = '1') then
                 clk_dvdr <= "01";
                 phi0 <= '0';
-                phi1 <= '0';
             else
                 case clk_dvdr is
                     when "00" =>
                         clk_dvdr <= "01";
                         phi0 <= '0';
-                        phi1 <= '1';
                     when "01" =>
                         clk_dvdr <= "11";
                         phi0 <= '0';
-                        phi1 <= '0';
                     when "11" =>
                         clk_dvdr <= "00";
                         phi0 <= '1';
-                        phi1 <= '1';
                     when others =>
                         null;
                 end case;
@@ -1372,11 +1275,9 @@ begin
 		end if;
 	end process;
 
-	hsyn <= hsync;
-	vsyn <= vsync;
 	
-	Inst_VGAColorTable: VGAColorTable PORT MAP(
-		clk => clk,
+	Inst_VGAColorTable: work.VGAColorTable PORT MAP(
+		clk => vid_clk,
 		lum => '0' & int_colu(2 downto 0),
 		hue => int_colu(6 downto 3),
 		mode => '0' & pal,	-- 00 = NTSC, 01 = PAL

@@ -49,42 +49,12 @@ end arch;
 
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-entity ram256x8 is
-    port(clk: in std_logic;
-         r: in std_logic;
-         d_in: in std_logic_vector(7 downto 0);
-         d_out: out std_logic_vector(7 downto 0);
-         a: in std_logic_vector(7 downto 0));
-end ram256x8;
-
-architecture arch of ram256x8 is
-    type ram_type is array (0 to 255) of
-        std_logic_vector(7 downto 0);
-    signal ram: ram_type;
-begin
-
-    process (clk, r, a)
-    begin
-        if (clk'event and clk = '1') then
-            if (r = '1') then
-                d_out <= ram(to_integer(unsigned(a)));
-            else
-                ram(to_integer(unsigned(a))) <= d_in;
-            end if;
-        end if;
-    end process;
-
-end arch;
-
-library ieee;
-use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
 entity A6532 is
     port(clk: in std_logic;
+         ph2: in std_logic;
          r: in std_logic;
          rs: in std_logic;
          cs: in std_logic;
@@ -134,8 +104,17 @@ architecture arch of A6532 is
     signal ram_r: std_logic;
 
     signal clk2: std_logic;
+    signal ph2_d: std_logic;
+    signal ph2_rise: std_logic;
 
 begin
+    ph2_rise <= '1' when ph2_d = '0' and ph2 = '1' else '0';
+
+    process(clk) begin
+        if rising_edge(clk) then
+            ph2_d <= ph2;
+        end if;
+    end process;
 
     -- This clock is phase shifted so that we can use Xilinx synchronous block RAM.
     clk2 <= not clk;
@@ -161,7 +140,7 @@ begin
     irq <= not ((timer_intr and timer_irq_en) or (edge_intr and edge_irq_en));
     edge_intr <= edge_intr_lo when edge_pol = '0' else edge_intr_hi;
 
-    process(clk, cs, r, rs, a, ram_d_out, pa_in, pa_ddr, pb_in, pb_ddr, timer, timer_intr, edge_intr)
+    process(clk, ph2_rise, cs, r, rs, a, ram_d_out, pa_in, pa_ddr, pb_in, pb_ddr, timer, timer_intr, edge_intr)
     begin
         if r = '1' then
             if (cs = '0') then
@@ -190,7 +169,7 @@ begin
             end if;
         else
             d <= "ZZZZZZZZ";
-            if (clk'event and clk = '1' and cs = '1') then
+            if (clk'event and clk = '1' and cs = '1' and ph2_rise = '1') then
                 if (rs = '1') then
                     if a(2) = '0' then
                         case a(1 downto 0) is
@@ -236,9 +215,9 @@ begin
         timer_dvdr(10) when "11",
         '-' when others;
 
-    process(clk)
+    process(clk, ph2_rise)
     begin
-        if (clk'event and clk = '1') then
+        if (clk'event and clk = '1' and ph2_rise = '1') then
             if (timer_inc = '1') then
                 timer_dvdr <= "00000000001";
             else
