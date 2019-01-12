@@ -512,7 +512,7 @@ begin
 	 -- derive banking scheme from cartridge size
     process(rom_size, force_bs)
     begin
-      if(force_bs /= "000") then
+      if(force_bs /= "0000") then
         bss <= force_bs;
       elsif(rom_size <= '0'&x"1000") then    -- 4k and less
         bss <= BANK00;

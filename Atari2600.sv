@@ -236,7 +236,7 @@ dpram #(16) rom
 	.q_b(rom_data)
 );
 
-reg [2:0] force_bs = 0;
+reg [3:0] force_bs = 0;
 reg sc = 0;
 always @(posedge clk_sys) begin
 	reg       old_download;
@@ -245,10 +245,14 @@ always @(posedge clk_sys) begin
 	if(~old_download & ioctl_download) begin
 		force_bs <= 0;
 		sc <= status[9];
-		if (ioctl_file_ext[23:0] == ".E0") force_bs <= 4;
+		if (ioctl_file_ext[23:0] == ".F8") force_bs <= 1;
+		if (ioctl_file_ext[23:0] == ".F6") force_bs <= 2;
 		if (ioctl_file_ext[23:0] == ".FE") force_bs <= 3;
+		if (ioctl_file_ext[23:0] == ".E0") force_bs <= 4;
 		if (ioctl_file_ext[23:0] == ".3F") force_bs <= 5;
+    	if (ioctl_file_ext[23:0] == ".F4") force_bs <= 6;
 		if (ioctl_file_ext[23:0] == ".P2") force_bs <= 7; // Pitfall II
+    	if (ioctl_file_ext[23:0] == ".FA") force_bs <= 8;
 	end
 end
 
