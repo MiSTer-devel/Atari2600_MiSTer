@@ -578,7 +578,7 @@ entity TIA is
 		rgbx2: out std_logic_vector(23 downto 0);
 		rdy: out std_logic;
 		ph0: out std_logic;
-         ph2: out std_logic;
+		ph2: out std_logic;
 		au0: out std_logic;
 		au1: out std_logic;
 		av0: out std_logic_vector(3 downto 0);

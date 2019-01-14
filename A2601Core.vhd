@@ -55,67 +55,80 @@ entity A2601 is
 end A2601;
 
 architecture arch of A2601 is
-    signal rdy: std_logic;
-    signal cpu_a: std_logic_vector(12 downto 0);
-    signal read: std_logic;
-    signal riot_rs: std_logic;
-    signal riot_cs: std_logic;
-    signal riot_a: std_logic_vector(6 downto 0);
-    signal tia_cs: std_logic;
-    signal tia_a: std_logic_vector(5 downto 0);
-    signal ph0: std_logic;
-    signal ph0d: std_logic;
-    signal ph0rise: std_logic;
-    signal ph0clk: std_logic;
-    signal ph2: std_logic;
+	signal rdy     : std_logic;
+	signal cpu_a   : std_logic_vector(12 downto 0);
+	signal read    : std_logic;
+	signal ph0     : std_logic;
+	signal ph0d    : std_logic;
+	signal ph0rise : std_logic;
+	signal ph2     : std_logic;
 begin
 
-	 ph0d <= ph0 when falling_edge(clk);
-	 ph0rise <= not ph0d and ph0;
-    ph0clk <= not clk and ph0rise;
+ph0_out <= ph0;
+ph2_out <= ph2;
 
-    ph0_out <= ph0;
-    ph2_out <= ph2;
+r <= read;
+a <= cpu_a;
 
-    r <= read;
+ph0d <= ph0 when falling_edge(clk);
+ph0rise <= not ph0d and ph0;
 
-    cpu_A6507: work.A6507
-    port map(
-        clk     => ph0clk,
-        rst     => rst,
-        rdy     => rdy,
-        d       => d,
-        ad      => cpu_a,
-        r       => read);
+cpu_A6507: work.A6507
+port map(
+	clk     => not clk and ph0rise,
+	rst     => rst,
+	rdy     => rdy,
+	d       => d,
+	ad      => cpu_a,
+	r       => read
+);
 
-    riot_A6532: work.A6532
-    port map(
-        clk     => clk,
-        ph2     => ph2,
-        r       => read,
-        rs      => riot_rs,
-        cs      => riot_cs,
-        irq     => open,
-        d       => d,
-        pa      => pa,
-        pb      => pb,
-        pa7     => '0',
-        a       => riot_a);
+riot_A6532: work.A6532
+port map(
+	clk     => clk,
+	ph2     => ph2,
+	r       => read,
+	rs      => cpu_a(9),
+	cs      => not cpu_a(12) and cpu_a(7),
+	irq     => open,
+	d       => d,
+	pa      => pa,
+	pb      => pb,
+	pa7     => '0',
+	a       => cpu_a(6 downto 0)
+);
 
-    tia_inst: work.TIA
-        port map(clk_vid, clk, tia_cs, read, tia_a, d,
-            colu, hsyn, vsyn, hblank, vblank, rgbx2, rdy, ph0, ph2,
-            au0, au1, av0, av1, paddle_0, paddle_1, paddle_ena1, paddle_2, paddle_3,
-            paddle_ena2, inpt4, inpt5,pal);
-
-    tia_cs <= '1' when (cpu_a(12) = '0') and (cpu_a(7) = '0') else '0';
-    riot_cs <= '1' when (cpu_a(12) = '0') and (cpu_a(7) = '1') else '0';
-    riot_rs <= '1' when (cpu_a(9) = '1') else '0';
-
-    tia_a <= cpu_a(5 downto 0);
-    riot_a <= cpu_a(6 downto 0);
-
-    a <= cpu_a;
+TIA: work.TIA
+port map(
+	vid_clk    => clk_vid,
+	clk        => clk,
+	cs         => not cpu_a(12) and not cpu_a(7),
+	r          => read,
+	a          => cpu_a(5 downto 0),
+	d          => d,
+	colu       => colu,
+	hsyn       => hsyn,
+	vsyn       => vsyn,
+	ohblank    => hblank,
+	ovblank    => vblank,
+	rgbx2      => rgbx2,
+	rdy        => rdy,
+	ph0        => ph0,
+	ph2        => ph2,
+	au0        => au0,
+	au1        => au1,
+	av0        => av0,
+	av1        => av1,
+	paddle_0   => paddle_0,
+	paddle_1   => paddle_1,
+	paddle_ena1=> paddle_ena1,
+	paddle_2   => paddle_2,
+	paddle_3   => paddle_3,
+	paddle_ena2=> paddle_ena2,
+	inpt4      => inpt4,
+	inpt5      => inpt5,
+	pal        => pal
+);
 
 end arch;
 
