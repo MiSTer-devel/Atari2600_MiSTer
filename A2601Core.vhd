@@ -60,14 +60,19 @@ architecture arch of A2601 is
     signal read: std_logic;
     signal riot_rs: std_logic;
     signal riot_cs: std_logic;
-    signal riot_irq: std_logic;
-    signal riot_pa7: std_logic;
     signal riot_a: std_logic_vector(6 downto 0);
     signal tia_cs: std_logic;
     signal tia_a: std_logic_vector(5 downto 0);
     signal ph0: std_logic;
+    signal ph0d: std_logic;
+    signal ph0rise: std_logic;
+    signal ph0clk: std_logic;
     signal ph2: std_logic;
 begin
+
+	 ph0d <= ph0 when falling_edge(clk);
+	 ph0rise <= not ph0d and ph0;
+    ph0clk <= not clk and ph0rise;
 
     ph0_out <= ph0;
     ph2_out <= ph2;
@@ -75,20 +80,33 @@ begin
     r <= read;
 
     cpu_A6507: work.A6507
-        port map(ph0, rst, rdy, d, cpu_a, read);
+    port map(
+        clk     => ph0clk,
+        rst     => rst,
+        rdy     => rdy,
+        d       => d,
+        ad      => cpu_a,
+        r       => read);
 
     riot_A6532: work.A6532
-        port map(clk, ph2, read, riot_rs, riot_cs,
-            open, d, pa, pb, '0', riot_a);
+    port map(
+        clk     => clk,
+        ph2     => ph2,
+        r       => read,
+        rs      => riot_rs,
+        cs      => riot_cs,
+        irq     => open,
+        d       => d,
+        pa      => pa,
+        pb      => pb,
+        pa7     => '0',
+        a       => riot_a);
 
     tia_inst: work.TIA
         port map(clk_vid, clk, tia_cs, read, tia_a, d,
             colu, hsyn, vsyn, hblank, vblank, rgbx2, rdy, ph0, ph2,
-            au0, au1, av0, av1,
-				paddle_0, paddle_1, paddle_ena1, 
-				paddle_2, paddle_3, paddle_ena2,
-				inpt4, inpt5,
-				pal);
+            au0, au1, av0, av1, paddle_0, paddle_1, paddle_ena1, paddle_2, paddle_3,
+            paddle_ena2, inpt4, inpt5,pal);
 
     tia_cs <= '1' when (cpu_a(12) = '0') and (cpu_a(7) = '0') else '0';
     riot_cs <= '1' when (cpu_a(12) = '0') and (cpu_a(7) = '1') else '0';

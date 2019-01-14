@@ -50,6 +50,7 @@ set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS OFF
 set_global_assignment -name OPTIMIZE_POWER_DURING_FITTING OFF
 set_global_assignment -name FINAL_PLACEMENT_OPTIMIZATION ALWAYS
+set_global_assignment -name SYNTH_GATED_CLOCK_CONVERSION ON
 set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
 set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
 set_global_assignment -name SEED 1
@@ -356,8 +357,7 @@ set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:sys/build_id.tcl"
 set_global_assignment -name CDF_FILE jtag.cdf
 set_global_assignment -name QIP_FILE sys/sys.qip
 set_global_assignment -name VHDL_FILE bram.vhd
-set_global_assignment -name VHDL_FILE cpu_65xx_a.vhd
-set_global_assignment -name VHDL_FILE cpu_65xx_e.vhd
+set_global_assignment -name VHDL_FILE cpu65xx.vhd
 set_global_assignment -name VHDL_FILE Common.vhd
 set_global_assignment -name VHDL_FILE VGAColorTable.vhd
 set_global_assignment -name VHDL_FILE TIA.vhd

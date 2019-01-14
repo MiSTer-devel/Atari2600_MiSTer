@@ -44,9 +44,9 @@ entity A2601top is
 		O_HSYNC   : out std_logic;
 		O_HBLANK  : out std_logic;
 		O_VBLANK  : out std_logic;
-		O_VIDEO_R : out std_logic_vector(5 downto 0);
-		O_VIDEO_G : out std_logic_vector(5 downto 0);
-		O_VIDEO_B : out std_logic_vector(5 downto 0);			
+		O_VIDEO_R : out std_logic_vector(7 downto 0);
+		O_VIDEO_G : out std_logic_vector(7 downto 0);
+		O_VIDEO_B : out std_logic_vector(7 downto 0);			
 
 		p_l       : in std_logic;
 		p_r       : in std_logic;
@@ -103,7 +103,9 @@ architecture arch of A2601top is
     signal rst: std_logic := '1';
     signal sys_clk_dvdr: unsigned(4 downto 0) := "00000";
 
-    signal ph0: std_logic;
+    signal ph0:  std_logic;
+    signal ph0d: std_logic;
+    signal ph0rise: std_logic;
     signal ph2: std_logic;
 	 
     signal rgbx2: std_logic_vector(23 downto 0);
@@ -178,32 +180,61 @@ architecture arch of A2601top is
     signal DpcRandom	: std_logic_vector(7 downto 0) := x"01";
     signal DpcWrite	: std_logic := '0';
     signal DpcClocks : unsigned(15 downto 0) := (others=>'0');
-	signal clk_music : unsigned(3 downto 0) := (others=>'0');	 -- 3 e o melhor
+    signal clk_music : unsigned(3 downto 0) := (others=>'0');	 -- 3 e o melhor
     signal DpcClockDivider : unsigned(9 downto 0);
 	 
 begin
 
 	ms_A2601: work.A2601
-        port map(clk_vid, clk, rst, cpu_d, cpu_a, open, pa, pb, 
-				paddle_0, paddle_1, paddle_ena1, paddle_2, paddle_3, paddle_ena2,
-				inpt4, inpt5, open, vsyn, hsyn, O_HBLANK, O_VBLANK, rgbx2, 
-				au0, au1, av0, av1, ph0, open, pal);
+    port map(
+        clk_vid     => clk_vid,
+        clk         => clk,
+        rst         => rst,
+        d           => cpu_d,
+        a           => cpu_a,
+        pa          => pa,
+        pb          => pb,
+        paddle_0    => paddle_0,
+        paddle_1    => paddle_1,
+        paddle_ena1 => paddle_ena1,
+        paddle_2    => paddle_2,
+        paddle_3    => paddle_3,
+        paddle_ena2 => paddle_ena2,
+        inpt4       => inpt4,
+        inpt5       => inpt5,
+        colu        => open,
+        vsyn        => vsyn,
+        hsyn        => hsyn,
+        hblank      => O_HBLANK,
+        vblank      => O_VBLANK,
+        rgbx2       => rgbx2,
+        au0         => au0,
+        au1         => au1,
+        av0         => av0,
+        av1         => av1,
+        ph0_out     => ph0,
+        pal         => pal);
 	
 	
-  O_VIDEO_R <= rgbx2(23 downto 18);
-  O_VIDEO_G <= rgbx2(15 downto 10);
-  O_VIDEO_B <= rgbx2(7 downto 2);	
+  O_VIDEO_R <= rgbx2(23 downto 16);
+  O_VIDEO_G <= rgbx2(15 downto 8);
+  O_VIDEO_B <= rgbx2(7 downto 0);	
   O_HSYNC   <= hsyn;
   O_VSYNC   <= vsyn;
 
- process(ph0)
+  ph0d <= ph0 when falling_edge(clk);
+  ph0rise <= not ph0d and ph0;
+
+	process(clk)
     begin
-        if (ph0'event and ph0 = '1') then
+		if falling_edge(clk) then
+        if ph0rise = '1' then
 			if reset = '1' then
 				rst <= '1';
 			else
 				rst <= '0';
 			end if;
+		  end if;
 		end if;
             
     end process;
@@ -217,9 +248,10 @@ begin
 		end if;
 	end process;
 	 
-    process(ph0)
+    process(clk)
     begin
-        if (ph0'event and ph0 = '1') then
+		if falling_edge(clk) then
+         if ph0rise = '1' then
             ctrl_cntr <= ctrl_cntr + 1;
             if (ctrl_cntr = "1111") then
                 pb(0) <= p_start; 
@@ -244,7 +276,8 @@ begin
 						inpt5 <= '1';
 					 end if;
            end if;
-        end if;
+			end if;
+      end if;
     end process;
     
     pb(3) <= p_color;  --b/w / colour
@@ -339,11 +372,12 @@ begin
             bss = BANKP2 and cpu_a >= "1" & x"008" and cpu_a <= "1" & x"017" else
           bank(2 downto 0) & cpu_a(11 downto 0);
 
-    bankswch: process(ph0)
+    bankswch: process(clk)
         variable w_index_v :integer; 
         variable addr_v :std_logic_vector(12 downto 0); 
     begin
-        if (ph0'event and ph0 = '1') then
+		if falling_edge(clk) then
+        if ph0rise = '1' then
             if (rst = '1') then
                 bank <= "0000";
                 e0_bank0 <= "000";
@@ -507,6 +541,7 @@ begin
                 end case;
             end if;
         end if;
+		end if;
     end process;
 
 	 -- derive banking scheme from cartridge size

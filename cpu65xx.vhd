@@ -5,9 +5,7 @@
 --     A fully functional commodore 64 implementation in a single FPGA
 --
 -- -----------------------------------------------------------------------
--- Copyright 2005-2011 by Peter Wendrich (pwsoft@syntiac.com)
--- All Rights Reserved.
---
+-- Copyright 2005-2008 by Peter Wendrich (pwsoft@syntiac.com)
 -- http://www.syntiac.com/fpga64.html
 -- -----------------------------------------------------------------------
 --
@@ -17,7 +15,36 @@
 
 library IEEE;
 use ieee.std_logic_1164.ALL;
+use ieee.std_logic_unsigned.ALL;
 use ieee.numeric_std.ALL;
+
+entity cpu65xx is
+	generic (
+		pipelineOpcode : boolean;
+		pipelineAluMux : boolean;
+		pipelineAluOut : boolean
+	);
+	port (
+		clk : in std_logic;
+		enable : in std_logic;
+		reset : in std_logic;
+		nmi_n : in std_logic;
+		irq_n : in std_logic;
+		so_n : in std_logic := '1';
+
+		di : in unsigned(7 downto 0);
+		do : out unsigned(7 downto 0);
+		addr : out unsigned(15 downto 0);
+		we : out std_logic;
+		
+		debugOpcode : out unsigned(7 downto 0);
+		debugPc : out unsigned(15 downto 0);
+		debugA : out unsigned(7 downto 0);
+		debugX : out unsigned(7 downto 0);
+		debugY : out unsigned(7 downto 0);
+		debugS : out unsigned(7 downto 0)
+	);
+end cpu65xx;
 
 -- -----------------------------------------------------------------------
 
@@ -35,7 +62,7 @@ use ieee.numeric_std.ALL;
 -- Brk / irq   (6) => fetch, cycle2, stack2, stack3, stack4
 -- -----------------------------------------------------------------------
 
-architecture rtl of cpu_65xx is
+architecture fast of cpu65xx is
 -- Statemachine
 	type cpuCycles is (
 		opcodeFetch,  -- New opcode is read and registers updated
@@ -61,13 +88,11 @@ architecture rtl of cpu_65xx is
 	signal theCpuCycle : cpuCycles;
 	signal nextCpuCycle : cpuCycles;
 	signal updateRegisters : boolean;
-	signal processNmi : std_logic := '0';
-	signal processIrq : std_logic := '0';
-	signal processInt : std_logic := '0';
+	signal processIrq : std_logic;
 	signal nmiReg: std_logic;
 	signal nmiEdge: std_logic;
 	signal irqReg : std_logic; -- Delay IRQ input with one clock cycle.
-	signal so_reg : std_logic; -- SO pin edge detection
+	signal soReg : std_logic; -- SO pin edge detection
 
 -- Opcode decoding
 	constant opcUpdateA    : integer := 0;
@@ -97,92 +122,90 @@ architecture rtl of cpu_65xx is
 	constant opcIncrAfter  : integer := 23; -- Insert extra cycle to increment PC (RTS)
 	constant opcRti        : integer := 24;
 	constant opcIRQ        : integer := 25;
-	constant opcJAM        : integer := 26;
 
-	constant opcInA        : integer := 27;
-	constant opcInE        : integer := 28;
-	constant opcInX        : integer := 29;
-	constant opcInY        : integer := 30;
-	constant opcInS        : integer := 31;
-	constant opcInT        : integer := 32;
-	constant opcInH        : integer := 33;
-	constant opcInClear    : integer := 34;
-	constant aluMode1From  : integer := 35;
+	constant opcInA        : integer := 26;
+	constant opcInE        : integer := 27;
+	constant opcInX        : integer := 28;
+	constant opcInY        : integer := 29;
+	constant opcInS        : integer := 30;
+	constant opcInT        : integer := 31;
+	constant opcInH        : integer := 32;
+	constant opcInClear    : integer := 33;
+	constant aluMode1From  : integer := 34;
 	--
-	constant aluMode1To    : integer := 38;
-	constant aluMode2From  : integer := 39;
+	constant aluMode1To    : integer := 37;
+	constant aluMode2From  : integer := 38;
 	--
-	constant aluMode2To    : integer := 41;
+	constant aluMode2To    : integer := 40;
 	--
-	constant opcInCmp      : integer := 42;
-	constant opcInCpx      : integer := 43;
-	constant opcInCpy      : integer := 44;
+	constant opcInCmp      : integer := 41;
+	constant opcInCpx      : integer := 42;
+	constant opcInCpy      : integer := 43;
 	
 
-	subtype addrDef is unsigned(0 to 16);
+	subtype addrDef is unsigned(0 to 15);
 	--
-	--                      is JAM ------------------+
-	--                is Interrupt -----------------+|
-	--          instruction is RTI ----------------+||
-	--    PC++ on last cycle (RTS) ---------------+|||
-	--                      RMW    --------------+||||
-	--                     Write   -------------+|||||
-	--               Pop/Stack up -------------+||||||
-	--                    Branch   ---------+  |||||||
-	--                      Jump ----------+|  |||||||
-	--            Push or Pop data -------+||  |||||||
-	--            Push or Pop addr ------+|||  |||||||
-	--                   Indirect  -----+||||  |||||||
-	--                    ZeroPage ----+|||||  |||||||
-	--                    Absolute ---+||||||  |||||||
-	--              PC++ on cycle2 --+|||||||  |||||||
-	--                               |AZI||JBXY|WM||||
-	constant immediate : addrDef := "10000000000000000";
-	constant implied   : addrDef := "00000000000000000";
+	--               is Interrupt  -----------------+
+	--          instruction is RTI ----------------+|
+	--    PC++ on last cycle (RTS) ---------------+||
+	--                      RMW    --------------+|||
+	--                     Write   -------------+||||
+	--               Pop/Stack up -------------+|||||
+	--                    Branch   ---------+  ||||||
+	--                      Jump ----------+|  ||||||
+	--            Push or Pop data -------+||  ||||||
+	--            Push or Pop addr ------+|||  ||||||
+	--                   Indirect  -----+||||  ||||||
+	--                    ZeroPage ----+|||||  ||||||
+	--                    Absolute ---+||||||  ||||||
+	--              PC++ on cycle2 --+|||||||  ||||||
+	--                               |AZI||JBXY|WM|||
+	constant immediate : addrDef := "1000000000000000";
+	constant implied   : addrDef := "0000000000000000";
 	-- Zero page
-	constant readZp    : addrDef := "10100000000000000";
-	constant writeZp   : addrDef := "10100000000100000";
-	constant rmwZp     : addrDef := "10100000000010000";
+	constant readZp    : addrDef := "1010000000000000";
+	constant writeZp   : addrDef := "1010000000010000";
+	constant rmwZp     : addrDef := "1010000000001000";
 	-- Zero page indexed
-	constant readZpX   : addrDef := "10100000100000000";
-	constant writeZpX  : addrDef := "10100000100100000";
-	constant rmwZpX    : addrDef := "10100000100010000";
-	constant readZpY   : addrDef := "10100000010000000";
-	constant writeZpY  : addrDef := "10100000010100000";
-	constant rmwZpY    : addrDef := "10100000010010000";
+	constant readZpX   : addrDef := "1010000010000000";
+	constant writeZpX  : addrDef := "1010000010010000";
+	constant rmwZpX    : addrDef := "1010000010001000";
+	constant readZpY   : addrDef := "1010000001000000";
+	constant writeZpY  : addrDef := "1010000001010000";
+	constant rmwZpY    : addrDef := "1010000001001000";
 	-- Zero page indirect
-	constant readIndX  : addrDef := "10010000100000000";
-	constant writeIndX : addrDef := "10010000100100000";
-	constant rmwIndX   : addrDef := "10010000100010000";
-	constant readIndY  : addrDef := "10010000010000000";
-	constant writeIndY : addrDef := "10010000010100000";
-	constant rmwIndY   : addrDef := "10010000010010000";
+	constant readIndX  : addrDef := "1001000010000000";
+	constant writeIndX : addrDef := "1001000010010000";
+	constant rmwIndX   : addrDef := "1001000010001000";
+	constant readIndY  : addrDef := "1001000001000000";
+	constant writeIndY : addrDef := "1001000001010000";
+	constant rmwIndY   : addrDef := "1001000001001000";
 	--                               |AZI||JBXY|WM||
 	-- Absolute
-	constant readAbs   : addrDef := "11000000000000000";	
-	constant writeAbs  : addrDef := "11000000000100000";	
-	constant rmwAbs    : addrDef := "11000000000010000";	
-	constant readAbsX  : addrDef := "11000000100000000";	
-	constant writeAbsX : addrDef := "11000000100100000";	
-	constant rmwAbsX   : addrDef := "11000000100010000";	
-	constant readAbsY  : addrDef := "11000000010000000";	
-	constant writeAbsY : addrDef := "11000000010100000";	
-	constant rmwAbsY   : addrDef := "11000000010010000";	
+	constant readAbs   : addrDef := "1100000000000000";	
+	constant writeAbs  : addrDef := "1100000000010000";	
+	constant rmwAbs    : addrDef := "1100000000001000";	
+	constant readAbsX  : addrDef := "1100000010000000";	
+	constant writeAbsX : addrDef := "1100000010010000";	
+	constant rmwAbsX   : addrDef := "1100000010001000";	
+	constant readAbsY  : addrDef := "1100000001000000";	
+	constant writeAbsY : addrDef := "1100000001010000";	
+	constant rmwAbsY   : addrDef := "1100000001001000";	
 	-- PHA PHP
-	constant push      : addrDef := "00000100000000000";
+	constant push      : addrDef := "0000010000000000";
 	-- PLA PLP
-	constant pop       : addrDef := "00000100001000000";
+	constant pop       : addrDef := "0000010000100000";
 	-- Jumps
-	constant jsr       : addrDef := "10001010000000000";
-	constant jumpAbs   : addrDef := "10000010000000000";
-	constant jumpInd   : addrDef := "11000010000000000";
-	constant relative  : addrDef := "10000001000000000";
+	constant jsr       : addrDef := "1000101000000000";
+	constant jumpAbs   : addrDef := "1000001000000000";
+	constant jumpInd   : addrDef := "1100001000000000";
+	constant relative  : addrDef := "1000000100000000";
 	-- Specials
-	constant rts       : addrDef := "00001010001001000";
-	constant rti       : addrDef := "00001110001000100";
-	constant brk       : addrDef := "10001110000000010";
-	constant xxxxxxxx  : addrDef := "0---------0---001";
+	constant rts       : addrDef := "0000101000100100";
+	constant rti       : addrDef := "0000111000100010";
+	constant brk       : addrDef := "1000111000000001";
 --	constant        : unsigned(0 to 0) := "0";
+	constant xxxxxxxx  : addrDef := "----------0---00";
 	
 	-- A = accu
 	-- E = Accu | 0xEE (for ANE, LXA)
@@ -289,7 +312,7 @@ architecture rtl of cpu_65xx is
 	constant stackDec : unsigned(0 to 0) := "1";
 	constant stackXXX : unsigned(0 to 0) := "-";
 
-	subtype decodedBitsDef is unsigned(0 to 44);
+	subtype decodedBitsDef is unsigned(0 to 43);
 	type opcodeInfoTableDef is array(0 to 255) of decodedBitsDef;
 	constant opcodeInfoTable : opcodeInfoTableDef := (
 	-- +------- Update register A
@@ -477,8 +500,7 @@ architecture rtl of cpu_65xx is
 	  "0010" & "100010" & implied   & aluInA   & aluInp, -- A8 TAY
 	  "1000" & "100010" & immediate & aluInT   & aluInp, -- A9 LDA imm
 	  "0100" & "100010" & implied   & aluInA   & aluInp, -- AA TAX
-	  --"1100" & "100010" & immediate & aluInET  & aluInp, -- AB iLXA imm
- 	  "1100" & "100010" & immediate & aluInET  & aluAnd, -- AB iLXA imm - MWW:change for Atari800 CPU
+	  "1100" & "100010" & immediate & aluInET  & aluInp, -- AB iLXA imm
 	  "0010" & "100010" & readAbs   & aluInT   & aluInp, -- AC LDY abs
 	  "1000" & "100010" & readAbs   & aluInT   & aluInp, -- AD LDA abs
 	  "0100" & "100010" & readAbs   & aluInT   & aluInp, -- AE LDX abs
@@ -592,7 +614,6 @@ architecture rtl of cpu_65xx is
 		nextAddrStack,
 		nextAddrRelative
 	);
-	signal halt_dly : std_logic := '0'; -- !!! TODO: high address correction on boundary crossing continues on BA=0. Temp register to remember that incr is done.
 	signal nextAddr : nextAddrDef;
 	signal myAddr : unsigned(15 downto 0);
 	signal myAddrIncr : unsigned(15 downto 0);
@@ -615,12 +636,12 @@ architecture rtl of cpu_65xx is
 	signal S: unsigned(7 downto 0); -- stack pointer
 
 -- Status register
-	signal Creg: std_logic; -- Carry
-	signal Zreg: std_logic; -- Zero flag
-	signal Ireg: std_logic; -- Interrupt flag
-	signal Dreg: std_logic; -- Decimal mode
-	signal Vreg: std_logic; -- Overflow
-	signal Nreg: std_logic; -- Negative
+	signal C: std_logic; -- Carry
+	signal Z: std_logic; -- Zero flag
+	signal I: std_logic; -- Interrupt flag
+	signal D: std_logic; -- Decimal mode
+	signal V: std_logic; -- Overflow
+	signal N: std_logic; -- Negative
 
 -- ALU
 	-- ALU input
@@ -645,9 +666,6 @@ architecture rtl of cpu_65xx is
 
 -- Indexing
 	signal indexOut : unsigned(8 downto 0);
-
--- JAM
-	signal jam_flag : std_logic := '0';
 
 begin
 processAluInput: process(clk, opcInfo, A, X, Y, T, S)
@@ -713,9 +731,7 @@ processCmpInput: process(clk, opcInfo, A, X, Y)
 	-- Accumulator instructions: ADC, SBC, EOR, AND, EOR, ORA
 	-- Some instructions are both RMW and accumulator so for most
 	-- instructions the rmw results are routed through accu alu too.
-processAlu: process(clk,
-	opcInfo, aluInput, aluInputReg, aluCmpInput, aluCmpInputReg, aluNineReg,
-	A, T, irqActive, Nreg, Vreg, Dreg, Ireg, Zreg, Creg, aluNreg, aluVreg, aluZreg, aluCreg)
+processAlu: process(clk, opcInfo, aluInput, aluCmpInput, A, T, irqActive, N, V, D, I, Z, C)
 		variable lowBits: unsigned(5 downto 0);
 		variable nineBits: unsigned(8 downto 0);
 		variable rmwBits: unsigned(8 downto 0);
@@ -733,13 +749,13 @@ processAlu: process(clk,
 		-- Shift unit
 		case opcInfo(aluMode1From to aluMode1To) is
 		when aluModeInp =>
-			rmwBits := Creg & aluInput;
+			rmwBits := C & aluInput;
 		when aluModeP =>
-			rmwBits := Creg & Nreg & Vreg & '1' & (not irqActive) & Dreg & Ireg & Zreg & Creg;
+			rmwBits := C & N & V & '1' & (not irqActive) & D & I & Z & C;
 		when aluModeInc =>
-			rmwBits := Creg & (aluInput + 1);
+			rmwBits := C & (aluInput + 1);
 		when aluModeDec =>
-			rmwBits := Creg & (aluInput - 1);
+			rmwBits := C & (aluInput - 1);
 		when aluModeAsl =>
 			rmwBits := aluInput & "0";
 		when aluModeFlg =>
@@ -747,13 +763,13 @@ processAlu: process(clk,
 		when aluModeLsr =>
 			rmwBits := aluInput(0) & "0" & aluInput(7 downto 1);
 		when aluModeRol =>
-			rmwBits := aluInput & Creg;
+			rmwBits := aluInput & C;
 		when aluModeRoR =>
-			rmwBits := aluInput(0) & Creg & aluInput(7 downto 1);
+			rmwBits := aluInput(0) & C & aluInput(7 downto 1);
 		when aluModeAnc =>
 			rmwBits := (aluInput(7) and A(7)) & aluInput;
 		when others =>
-			rmwBits := Creg & aluInput;
+			rmwBits := C & aluInput;
 		end case;
 		
 		-- ALU
@@ -776,9 +792,9 @@ processAlu: process(clk,
 			ninebits := rmwBits;
 		end case;
 
-		if (to_01(opcInfo(aluMode1From to aluMode1To)) = aluModeFlg) then
+		if (opcInfo(aluMode1From to aluMode1To) = aluModeFlg) then
 			varZ := rmwBits(1);
-		elsif to_01(ninebits(7 downto 0)) = X"00" then
+		elsif ninebits(7 downto 0) = X"00" then
 			varZ := '1';
 		else
 			varZ := '0';
@@ -787,7 +803,7 @@ processAlu: process(clk,
 		case opcInfo(aluMode2From to aluMode2To) is
 		when aluModeAdc =>
 			-- decimal mode low bits correction, is done after setting Z flag.
-			if Dreg = '1' then
+			if D = '1' then
 				if lowBits(5 downto 1) > 9 then
 					ninebits(3 downto 0) := ninebits(3 downto 0) + 6;
 					if lowBits(5) = '0'  then
@@ -799,14 +815,14 @@ processAlu: process(clk,
 			null;
 		end case;
 
-		if (to_01(opcInfo(aluMode1From to aluMode1To)) = aluModeBit)
-		or (to_01(opcInfo(aluMode1From to aluMode1To)) = aluModeFlg) then
+		if (opcInfo(aluMode1From to aluMode1To) = aluModeBit)
+		or (opcInfo(aluMode1From to aluMode1To) = aluModeFlg) then
 			varN := rmwBits(7);
 		else
 			varN := nineBits(7);
 		end if;
 		varC := ninebits(8);
-		if to_01(opcInfo(aluMode2From to aluMode2To)) = aluModeArr then
+		if opcInfo(aluMode2From to aluMode2To) = aluModeArr then
 			varC := aluInput(7);
 			varV := aluInput(7) xor aluInput(6);
 		end if;
@@ -815,7 +831,7 @@ processAlu: process(clk,
 		when aluModeAdc =>
 			-- decimal mode high bits correction, is done after setting Z and N flags
 			varV := (A(7) xor ninebits(7)) and (rmwBits(7) xor ninebits(7));
-			if Dreg = '1' then
+			if D = '1' then
 				if ninebits(8 downto 4) > 9 then
 					ninebits(8 downto 4) := ninebits(8 downto 4) + 6;
 					varC := '1';
@@ -823,7 +839,7 @@ processAlu: process(clk,
 			end if;
 		when aluModeSbc =>
 			varV := (A(7) xor ninebits(7)) and ((not rmwBits(7)) xor ninebits(7));
-			if Dreg = '1' then
+			if D = '1' then
 				-- Check for borrow (lower 4 bits)
 				if lowBits(5) = '0' then
 					ninebits(3 downto 0) := ninebits(3 downto 0) - 6;
@@ -834,7 +850,7 @@ processAlu: process(clk,
 				end if;
 			end if;
 		when aluModeArr =>
-			if Dreg = '1' then
+			if D = '1' then
 				if (("0" & aluInput(3 downto 0)) + ("0000" & aluInput(0))) > 5 then
 					ninebits(3 downto 0) := ninebits(3 downto 0) + 6;
 				end if;
@@ -877,48 +893,42 @@ processAlu: process(clk,
 calcInterrupt: process(clk)
 	begin
 		if rising_edge(clk) then
-			if (enable = '1') then -- and (halt = '0') then
-
-					irqReg <= irq_n;
-					nmiEdge <= nmi_n;
-					if (nmiEdge = '1') and (nmi_n = '0') then
-						nmiReg <= '0';
-					end if;
-
-
+			if enable = '1' then
 				if theCpuCycle = cycleStack4
 				or reset = '1' then
 					nmiReg <= '1';
 				end if;
 
-				if halt = '0' then
-					if theCpuCycle /= cycleBranchTaken then
-						-- The 'or opcInfo(opcSetI)' prevents NMI immediately after BRK or IRQ.
-						-- Presumably this is done in the real 6502/6510 to prevent a double IRQ.
-						processNmi <= not (nmiReg or opcInfo(opcIRQ));
-						processIrq <= not (irqReg or opcInfo(opcIRQ));
+				if nextCpuCycle /= cycleBranchTaken
+				and nextCpuCycle /= opcodeFetch then
+					irqReg <= irq_n;
+					nmiEdge <= nmi_n;
+					if (nmiEdge = '1') and (nmi_n = '0') then
+						nmiReg <= '0';
 					end if;
 				end if;
+				-- The 'or opcInfo(opcSetI)' prevents NMI immediately after BRK or IRQ.
+				-- Presumably this is done in the real 6502/6510 to prevent a double IRQ.
+				processIrq <= not ((nmiReg and (irqReg or I)) or opcInfo(opcIRQ));
 			end if;
-			processInt <= processNmi or (processIrq and (not Ireg));
 		end if;
 	end process;
 
-calcNextOpcode: process(clk, d, reset, processInt)
+calcNextOpcode: process(clk, di, reset, processIrq)
 		variable myNextOpcode : unsigned(7 downto 0);
 	begin
 		-- Next opcode is read from input unless a reset or IRQ is pending.
-		myNextOpcode := d;
+		myNextOpcode := di;
 		if reset = '1' then
 			myNextOpcode := X"4C";
-		elsif processInt = '1' then
+		elsif processIrq = '1' then
 			myNextOpcode := X"00";
 		end if;
 		
 		nextOpcode <= myNextOpcode;
 	end process;
 
-	nextOpcInfo <= opcodeInfoTable(to_integer(to_01(nextOpcode,'0')));
+	nextOpcInfo <= opcodeInfoTable(to_integer(nextOpcode));
 	process(clk)
 	begin
 		if rising_edge(clk) then
@@ -931,7 +941,7 @@ calcNextOpcode: process(clk, d, reset, processInt)
 calcOpcInfo: process(clk)
 	begin
 		if rising_edge(clk) then
-			if (enable = '1') and (halt = '0') then
+			if enable = '1' then
 				if (reset = '1') or (theCpuCycle = opcodeFetch) then
 					opcInfo <= nextOpcInfo;
 					if pipelineOpcode then
@@ -945,10 +955,10 @@ calcOpcInfo: process(clk)
 calcTheOpcode:	process(clk)
 	begin	
 		if rising_edge(clk) then
-			if (enable = '1') and (halt = '0') then
+			if enable = '1' then
 				if theCpuCycle = opcodeFetch then
 					irqActive <= '0';
-					if processInt = '1' then
+					if processIrq = '1' then
 						irqActive <= '1';
 					end if;
 					-- Fetch opcode
@@ -961,10 +971,10 @@ calcTheOpcode:	process(clk)
 -- -----------------------------------------------------------------------
 -- State machine
 -- -----------------------------------------------------------------------
-	process(enable, halt, theCpuCycle, opcInfo)
+	process(enable, theCpuCycle, opcInfo)
 	begin
 		updateRegisters <= false;
-		if (enable = '1') and (halt = '0') then
+		if enable = '1' then
 			if opcInfo(opcRti) = '1' then
 				if theCpuCycle = cycleRead then
 					updateRegisters <= true;
@@ -979,37 +989,30 @@ calcTheOpcode:	process(clk)
 	process(clk)
 	begin
 		if rising_edge(clk) then
-			if (enable = '1') and (halt = '0') then
+			if enable = '1' then
 				theCpuCycle <= nextCpuCycle;
-				debugJam <= jam_flag;
 			end if;
 			if reset = '1' then
 				theCpuCycle <= cycle2;
-				debugJam <= '0';
 			end if;				
 		end if;			
 	end process;
 
 	-- Determine the next cpu cycle. After the last cycle we always
 	-- go to opcodeFetch to get the next opcode.
-calcNextCpuCycle: process(theCpuCycle, opcInfo, theOpcode, indexOut, T, Nreg, Vreg, Creg, Zreg)
+calcNextCpuCycle: process(theCpuCycle, opcInfo, theOpcode, indexOut, T, N, V, C, Z)
 	begin
-		jam_flag <= '0';
 		nextCpuCycle <= opcodeFetch;
 
 		case theCpuCycle is
 		when opcodeFetch =>
 			nextCpuCycle <= cycle2;
 		when cycle2 =>
-			if enable_jam and (opcInfo(opcJAM) = '1') then
-				nextCpuCycle <= cycle2;
-				jam_flag <= '1';
-				-- Stay in cycle2
-			elsif opcInfo(opcBranch) = '1' then
-				if (Nreg = theOpcode(5) and theOpcode(7 downto 6) = "00")
-				or (Vreg = theOpcode(5) and theOpcode(7 downto 6) = "01")
-				or (Creg = theOpcode(5) and theOpcode(7 downto 6) = "10")
-				or (Zreg = theOpcode(5) and theOpcode(7 downto 6) = "11") then
+			if opcInfo(opcBranch) = '1' then
+				if (N = theOpcode(5) and theOpcode(7 downto 6) = "00")
+				or (V = theOpcode(5) and theOpcode(7 downto 6) = "01")
+				or (C = theOpcode(5) and theOpcode(7 downto 6) = "10")
+				or (Z = theOpcode(5) and theOpcode(7 downto 6) = "11") then
 					-- Branch condition is true
 					nextCpuCycle <= cycleBranchTaken;
 				end if;
@@ -1094,7 +1097,7 @@ calcNextCpuCycle: process(theCpuCycle, opcInfo, theOpcode, indexOut, T, Nreg, Vr
 					-- combined with RMW indexing
 					nextCpuCycle <= cycleRead2;
 				end if;
-			end if;
+			end if;											
 		when cycleRead2 =>
 			if opcInfo(opcRmw) = '1' then
 				nextCpuCycle <= cycleRmw;
@@ -1143,17 +1146,17 @@ calcNextCpuCycle: process(theCpuCycle, opcInfo, theOpcode, indexOut, T, Nreg, Vr
 calcT: process(clk)
 	begin
 		if rising_edge(clk) then
-			if (enable = '1') and (halt = '0') then
+			if enable = '1' then
 				case theCpuCycle is
 				when cycle2 =>
-					T <= d;
+					T <= di;
 				when cycleStack1 | cycleStack2 =>
 					if opcInfo(opcStackUp) = '1' then
 						-- Read from stack
-						T <= d;
+						T <= di;
 					end if;											
 				when cycleIndirect | cycleRead | cycleRead2 =>
-					T <= d;
+					T <= di;
 				when others =>
 					null;					
 				end case;
@@ -1211,7 +1214,7 @@ calcT: process(clk)
 		if rising_edge(clk) then
 			if updateRegisters then
 				if opcInfo(opcUpdateC) = '1' then
-					Creg <= aluC;
+					C <= aluC;
 				end if;
 			end if;
 		end if;
@@ -1225,7 +1228,7 @@ calcT: process(clk)
 		if rising_edge(clk) then
 			if updateRegisters then
 				if opcInfo(opcUpdateZ) = '1' then
-					Zreg <= aluZ;
+					Z <= aluZ;
 				end if;
 			end if;
 		end if;
@@ -1239,21 +1242,8 @@ calcT: process(clk)
 		if rising_edge(clk) then
 			if updateRegisters then
 				if opcInfo(opcUpdateI) = '1' then
-					Ireg <= aluInput(2);
+					I <= aluInput(2);
 				end if;
-			end if;
-			-- Hack to bypass 1 clock delay when CLI is interrupted by RDY/HALT.
-			if enable = '1' and (theCpuCycle = cycle2) and (halt = '1') then
-				if (theOpcode = X"58") then
-					Ireg <= '0';
-				end if;
-				if (theOpcode = X"78") then
-					Ireg <= '1';
-				end if;
-			end if;
-
-			if enable = '1' and reset = '1' then
-				Ireg <= '1';
 			end if;
 		end if;
 	end process;
@@ -1266,7 +1256,7 @@ calcT: process(clk)
 		if rising_edge(clk) then
 			if updateRegisters then
 				if opcInfo(opcUpdateD) = '1' then
-					Dreg <= aluInput(3);
+					D <= aluInput(3);
 				end if;
 			end if;
 		end if;
@@ -1280,13 +1270,15 @@ calcT: process(clk)
 		if rising_edge(clk) then
 			if updateRegisters then
 				if opcInfo(opcUpdateV) = '1' then
-					Vreg <= aluV;
+					V <= aluV;
 				end if;
 			end if;
-			if so_reg = '1' and so_n = '0' then
-				Vreg <= '1';
+			if enable = '1' then
+				if soReg = '1' and so_n = '0' then
+					V <= '1';
+				end if;
+				soReg <= so_n;
 			end if;
-			so_reg <= so_n;
 		end if;
 	end process;
 
@@ -1298,7 +1290,7 @@ calcT: process(clk)
 		if rising_edge(clk) then
 			if updateRegisters then
 				if opcInfo(opcUpdateN) = '1' then
-					Nreg <= aluN;
+					N <= aluN;
 				end if;
 			end if;
 		end if;
@@ -1319,7 +1311,7 @@ calcT: process(clk)
 				sIncDec := S - 1;
 			end if;	
 			
-			if (enable = '1') and (halt = '0') then
+			if enable = '1' then
 				updateFlag := false;			
 				case nextCpuCycle is
 				when cycleStack1 =>
@@ -1363,9 +1355,9 @@ calcT: process(clk)
 calcDo: process(clk)
 	begin
 		if rising_edge(clk) then
-			if (enable = '1') and (halt = '0') then
+			if enable = '1' then
 				doReg <= aluRmwOut;
-				if opcInfo(opcInH) = '1' and (halt_dly = '0') then
+				if opcInfo(opcInH) = '1' then
 					-- For illegal opcodes SHA, SHX, SHY, SHS
 					doReg <= aluRmwOut and myAddrIncrH;
 				end if;
@@ -1381,14 +1373,14 @@ calcDo: process(clk)
 				when cycleStack3 =>
 					doReg <= PC(7 downto 0);
 				when cycleRmw =>
---					q <= T; -- Read-modify-write write old value first.
-					doReg <= d; -- Read-modify-write write old value first.
+--					do <= T; -- Read-modify-write write old value first.
+					doReg <= di; -- Read-modify-write write old value first.
 				when others => null;
 				end case;
 			end if;			
 		end if;
 	end process;
-	q <= doReg;
+	do <= doReg;
 	
 
 
@@ -1398,7 +1390,7 @@ calcDo: process(clk)
 calcWe: process(clk)
 	begin
 		if rising_edge(clk) then
-			if (enable = '1') and (halt = '0') then
+			if enable = '1' then
 				theWe <= '0';
 				case nextCpuCycle is
 				when cycleStack1 =>
@@ -1418,9 +1410,6 @@ calcWe: process(clk)
 				when others =>
 					null;
 				end case;				
-				if reset = '1' then
-					theWe <= '0';
-				end if;
 			end if;
 		end if;							
 	end process;
@@ -1432,7 +1421,7 @@ calcWe: process(clk)
 calcPC: process(clk)
 	begin
 		if rising_edge(clk) then
-			if (enable = '1') and (halt = '0') then
+			if enable = '1' then
 				case theCpuCycle is
 				when opcodeFetch =>
 					PC <= myAddr;
@@ -1440,13 +1429,13 @@ calcPC: process(clk)
 					if irqActive = '0' then
 						if opcInfo(opcSecondByte) = '1' then
 							PC <= myAddrIncr;
-						else
+						else							
 							PC <= myAddr;
-						end if;
-					end if;
+						end if;							
+					end if;						
 				when cycle3 =>
 					if opcInfo(opcAbsolute) = '1' then
-						PC <= myAddrIncr;
+						PC <= myAddrIncr;					
 					end if;
 				when others =>
 					null;
@@ -1459,14 +1448,10 @@ calcPC: process(clk)
 -- -----------------------------------------------------------------------
 -- Address generation
 -- -----------------------------------------------------------------------
-calcNextAddr: process(theCpuCycle, opcInfo, indexOut, T, reset, processInt)
+calcNextAddr: process(theCpuCycle, opcInfo, indexOut, T, reset)
 	begin
 		nextAddr <= nextAddrIncr;
 		case theCpuCycle is
-		when opcodeFetch =>
-			if processInt = '1' then
-				nextAddr <= nextAddrHold;
-			end if;
 		when cycle2 =>
 			if opcInfo(opcStackAddr) = '1' 
 			or opcInfo(opcStackData) = '1' then
@@ -1486,9 +1471,9 @@ calcNextAddr: process(theCpuCycle, opcInfo, indexOut, T, reset, processInt)
 			if (opcInfo(opcIndirect) = '1')
 			and (opcInfo(indexX) = '1') then
 				nextAddr <= nextAddrAbs;
-			else
+			else							
 				nextAddr <= nextAddrAbsIndexed;
-			end if;
+			end if;				
 		when cyclePreIndirect =>
 			nextAddr <= nextAddrZPIndexed;
 		when cycleIndirect =>
@@ -1498,7 +1483,7 @@ calcNextAddr: process(theCpuCycle, opcInfo, indexOut, T, reset, processInt)
 		when cycleBranchPage =>
 			if T(7) = '0' then
 				nextAddr <= nextAddrIncrH;
-			else
+			else				
 				nextAddr <= nextAddrDecrH;
 			end if;
 		when cyclePreRead =>
@@ -1520,9 +1505,9 @@ calcNextAddr: process(theCpuCycle, opcInfo, indexOut, T, reset, processInt)
 				nextAddr <= nextAddrHold;
 			end if;
 		when cycleRmw =>
-			nextAddr <= nextAddrHold;
+			nextAddr <= nextAddrHold;			
 		when cyclePreWrite =>
-			nextAddr <= nextAddrHold;
+			nextAddr <= nextAddrHold;			
 			if opcInfo(opcZeroPage) = '1' then
 				nextAddr <= nextAddrZPIndexed;
 			elsif indexOut(8) = '1' then
@@ -1538,17 +1523,17 @@ calcNextAddr: process(theCpuCycle, opcInfo, indexOut, T, reset, processInt)
 			nextAddr <= nextAddrStack;
 			if opcInfo(opcStackData) = '0' then
 				nextAddr <= nextAddrPc;
-			end if;
+			end if;				
 		when cycleStack4 =>
 			nextAddr <= nextAddrIrq;
 		when cycleJump =>
 			nextAddr <= nextAddrAbs;
 		when others =>
 			null;
-		end case;
+		end case;										
 		if reset = '1' then
 			nextAddr <= nextAddrReset;
-		end if;
+		end if;			
 	end process;
 	
 indexAlu: process(opcInfo, myAddr, T, X, Y)
@@ -1567,15 +1552,11 @@ indexAlu: process(opcInfo, myAddr, T, X, Y)
 calcAddr: process(clk)
 	begin
 		if rising_edge(clk) then
-			if (enable = '1') then
-				halt_dly <= halt;
-			end if;
-			if (enable = '1') and (halt = '0') then
+			if enable = '1' then
 				case nextAddr is
 				when nextAddrIncr => myAddr <= myAddrIncr;
 				when nextAddrIncrL => myAddr(7 downto 0) <= myAddrIncr(7 downto 0);
--- !!! TODO fix properly. Real CPU updates address even if BA=0. Using halt_dly to emulate behavior until proper fix.
---				when nextAddrIncrH => myAddr(15 downto 8) <= myAddrIncrH;
+				when nextAddrIncrH => myAddr(15 downto 8) <= myAddrIncrH;
 				when nextAddrDecrH => myAddr(15 downto 8) <= myAddrDecrH;
 				when nextAddrPc => myAddr <= PC;
 				when nextAddrIrq =>
@@ -1584,18 +1565,12 @@ calcAddr: process(clk)
 						myAddr <= X"FFFA";
 					end if;
 				when nextAddrReset => myAddr <= X"FFFC";
-				when nextAddrAbs => myAddr <= d & T;
-				when nextAddrAbsIndexed => myAddr <= d & indexOut(7 downto 0);
-				when nextAddrZeroPage => myAddr <= "00000000" & d;
+				when nextAddrAbs => myAddr <= di & T;
+				when nextAddrAbsIndexed => myAddr <= di & indexOut(7 downto 0);
+				when nextAddrZeroPage => myAddr <= "00000000" & di;
 				when nextAddrZPIndexed => myAddr <= "00000000" & indexOut(7 downto 0);
 				when nextAddrStack => myAddr <= "00000001" & S;
 				when nextAddrRelative => myAddr(7 downto 0) <= indexOut(7 downto 0);
-				when others => null;
-				end case;
-			end if;
-			if (enable = '1') and (halt_dly = '0') then
-				case nextAddr is
-				when nextAddrIncrH => myAddr(15 downto 8) <= myAddrIncrH;
 				when others => null;
 				end case;
 			end if;
@@ -1603,8 +1578,7 @@ calcAddr: process(clk)
 	end process;	
 
 	myAddrIncr <= myAddr + 1;
-	myAddrIncrH <= (aluRmwOut and (myAddr(15 downto 8) + 1)) when (opcInfo(opcInH) and (opcInfo(opcInY) or opcInfo(opcInX))) = '1'
-					else myAddr(15 downto 8) + 1;
+	myAddrIncrH <= myAddr(15 downto 8) + 1;
 	myAddrDecrH <= myAddr(15 downto 8) - 1;
 
 	addr <= myAddr;
@@ -1613,8 +1587,7 @@ calcAddr: process(clk)
 	debugX <= X;
 	debugY <= Y;
 	debugS <= S;
-	debug_flags <= Nreg & Vreg & "10" & Dreg & Ireg & Zreg & Creg;
-
+	
 end architecture;
 
 

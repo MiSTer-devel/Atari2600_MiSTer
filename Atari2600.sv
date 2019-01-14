@@ -134,7 +134,7 @@ localparam CONF_STR = {
 	"O3,Difficulty P1,A,B;",
 	"O4,Difficulty P2,A,B;",
 	"J1,Fire,Paddle1,Paddle2,Start,Select;",
-	"V,v1.00.",`BUILD_DATE
+	"V,v",`BUILD_DATE
 };
 
 ////////////////////   CLOCKS   ///////////////////
@@ -314,7 +314,7 @@ A2601top A2601top
 	.p_dif(status[4:3])
 );
 
-wire [5:0] R,G,B;
+wire [7:0] R,G,B;
 wire HSync;
 wire HBlank, VBlank;
 reg VSync;
@@ -352,10 +352,7 @@ video_mixer #(.LINE_LENGTH(250)) video_mixer
 	.hq2x(scale==1),
 	.mono(0),
 
-	.VGA_DE(de),
-	.R({R,R[5:4]}),
-	.G({G,G[5:4]}),
-	.B({B,B[5:4]})
+	.VGA_DE(de)
 );
 
 //////////////////   ANALOG AXIS   ///////////////////
