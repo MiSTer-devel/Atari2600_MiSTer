@@ -17,7 +17,7 @@
 ### Supported mappers
 * Auto detected: F8, FA, F6, F4, FA
 * Manual set through file extension(ex: my_game.E0) : E0, FE, 3F, P2(PitFall II), CV
-* SuperChip (128b RAM) must be enabled before load the game if required.
+* SuperChip (128b RAM). 's' can be added to extension to automatically enable SuperChip (i.e. my_game.00s).
 * Any mapper can be forced through file extension. Supported extensions: F8, F6, FE, E0, 3F, F4, P2, FA, CV
 
 

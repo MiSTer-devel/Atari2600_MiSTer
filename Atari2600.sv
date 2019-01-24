@@ -123,8 +123,8 @@ assign VIDEO_ARY = status[8] ? 8'd9  : 8'd3;
 localparam CONF_STR = {
 	"ATARI2600;;",
 	"-;",
-	"F,A26BIN?? ;",
-	"O9,SuperChip,Disable,Enable;",
+	"F,?????;",
+	"O9A,SuperChip,Auto,Disable,Enable;",
 	"-;",
 	"O1,Video standard,NTSC,PAL;",
 	"O2,Video mode,Color,Mono;",
@@ -236,6 +236,8 @@ dpram #(16) rom
 	.q_b(rom_data)
 );
 
+wire [23:0] ext = (ioctl_file_ext[23:16] == ".") ? ioctl_file_ext[23:0] : ioctl_file_ext[31:8];
+
 reg [3:0] force_bs = 0;
 reg sc = 0;
 always @(posedge clk_sys) begin
@@ -245,15 +247,17 @@ always @(posedge clk_sys) begin
 	if(~old_download & ioctl_download) begin
 		force_bs <= 0;
 		sc <= status[9];
-		if (ioctl_file_ext[23:0] == ".F8") force_bs <= 1;
-		if (ioctl_file_ext[23:0] == ".F6") force_bs <= 2;
-		if (ioctl_file_ext[23:0] == ".FE") force_bs <= 3;
-		if (ioctl_file_ext[23:0] == ".E0") force_bs <= 4;
-		if (ioctl_file_ext[23:0] == ".3F") force_bs <= 5;
-    	if (ioctl_file_ext[23:0] == ".F4") force_bs <= 6;
-		if (ioctl_file_ext[23:0] == ".P2") force_bs <= 7; // Pitfall II
-    	if (ioctl_file_ext[23:0] == ".FA") force_bs <= 8;
-    	if (ioctl_file_ext[23:0] == ".CV") force_bs <= 9;
+		if (ext == ".F8") force_bs <= 1;
+		if (ext == ".F6") force_bs <= 2;
+		if (ext == ".FE") force_bs <= 3;
+		if (ext == ".E0") force_bs <= 4;
+		if (ext == ".3F") force_bs <= 5;
+    	if (ext == ".F4") force_bs <= 6;
+		if (ext == ".P2") force_bs <= 7; // Pitfall II
+    	if (ext == ".FA") force_bs <= 8;
+    	if (ext == ".CV") force_bs <= 9;
+	
+		sc <= (!status[10:9]) ? (ioctl_file_ext[8:0] == "S") : status[10];
 	end
 end
 
