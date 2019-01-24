@@ -123,7 +123,7 @@ assign VIDEO_ARY = status[8] ? 8'd9  : 8'd3;
 localparam CONF_STR = {
 	"ATARI2600;;",
 	"-;",
-	"F,?????;",
+	"F,*;",
 	"O9A,SuperChip,Auto,Disable,Enable;",
 	"-;",
 	"O1,Video standard,NTSC,PAL;",
@@ -227,10 +227,10 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_wait(0)
 );
 
-wire [15:0] rom_addr;
+wire [14:0] rom_addr;
 wire  [7:0] rom_data;
 
-dpram #(16, 8, "rom.mif") rom
+dpram #(15, 8, "rom.mif") rom
 (
 	.clock(clk_sys),
 
