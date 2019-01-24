@@ -133,6 +133,8 @@ localparam CONF_STR = {
 	"-;",
 	"O3,Difficulty P1,A,B;",
 	"O4,Difficulty P2,A,B;",
+	"-;",
+	"R0,Reset;",
 	"J1,Fire,Paddle1,Paddle2,Start,Select;",
 	"V,v",`BUILD_DATE
 };
@@ -164,7 +166,11 @@ wire reset = RESET | status[0] | ~initReset_n | buttons[1] | ioctl_download;
 
 reg initReset_n = 0;
 always @(posedge clk_sys) begin
+	int to = 0;
 	if(ioctl_download) initReset_n <= 1;
+	
+	if(to < 2000000) to <= to + 1;
+	else initReset_n <= 1;
 end
 
 //////////////////   HPS I/O   ///////////////////
@@ -224,7 +230,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 wire [15:0] rom_addr;
 wire  [7:0] rom_data;
 
-dpram #(16) rom
+dpram #(16, 8, "rom.mif") rom
 (
 	.clock(clk_sys),
 

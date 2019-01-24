@@ -494,6 +494,8 @@ process(rom_size, force_bs)
 begin
 	if(force_bs /= "0000") then
 		bss <= force_bs;
+	elsif(rom_size  = '0'&x"0000") then
+		bss <= BANK00;
 	elsif(rom_size <= '0'&x"0800") then -- 2k and less
 		bss <= BANK2K;
 	elsif(rom_size <= '0'&x"1000") then -- 4k and less
