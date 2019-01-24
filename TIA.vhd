@@ -796,7 +796,7 @@ begin
     process(clk)
     begin
         if (clk'event and clk = '1') then
-            if (h_lfsr_out = "010111") and (hh1_edge = '1') then
+            if (h_lfsr_out = "010100") and (hh1_edge = '1') then
                 hmove <= '0';
             elsif (hmove_set = '1') then
                 hmove <= '1';
