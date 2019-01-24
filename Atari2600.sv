@@ -253,6 +253,7 @@ always @(posedge clk_sys) begin
     	if (ioctl_file_ext[23:0] == ".F4") force_bs <= 6;
 		if (ioctl_file_ext[23:0] == ".P2") force_bs <= 7; // Pitfall II
     	if (ioctl_file_ext[23:0] == ".FA") force_bs <= 8;
+    	if (ioctl_file_ext[23:0] == ".CV") force_bs <= 9;
 	end
 end
 

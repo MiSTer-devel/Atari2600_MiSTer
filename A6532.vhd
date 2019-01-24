@@ -20,47 +20,17 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity ram128x8 is
+entity ramx8 is
+    generic(addr_width : integer := 7);
     port(clk: in std_logic;
          r: in std_logic;
          d_in: in std_logic_vector(7 downto 0);
          d_out: out std_logic_vector(7 downto 0);
-         a: in std_logic_vector(6 downto 0));
-end ram128x8;
+         a: in std_logic_vector(addr_width - 1 downto 0));
+end ramx8;
 
-architecture arch of ram128x8 is
-    type ram_type is array (0 to 127) of
-        std_logic_vector(7 downto 0);
-    signal ram: ram_type;
-begin
-
-    process (clk, r, a)
-    begin
-        if (clk'event and clk = '1') then
-            if (r = '1') then
-                d_out <= ram(to_integer(unsigned(a)));
-            else
-                ram(to_integer(unsigned(a))) <= d_in;
-            end if;
-        end if;
-    end process;
-
-end arch;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-entity ram256x8 is
-    port(clk: in std_logic;
-         r: in std_logic;
-         d_in: in std_logic_vector(7 downto 0);
-         d_out: out std_logic_vector(7 downto 0);
-         a: in std_logic_vector(7 downto 0));
-end ram256x8;
-
-architecture arch of ram256x8 is
-    type ram_type is array (0 to 255) of
+architecture arch of ramx8 is
+    type ram_type is array (0 to 2**addr_width - 1) of
         std_logic_vector(7 downto 0);
     signal ram: ram_type;
 begin
@@ -147,7 +117,7 @@ begin
         pb_in(i) <= pb(i) when pb_ddr(i) = '0' else pb_reg(i);
     end generate;
 
-    ram: work.ram128x8 port map(clk, ram_r, d, ram_d_out, a);
+    ram: work.ramx8 port map(clk, ram_r, d, ram_d_out, a);
 
     ram_r <= (not rs and r) or rs or not cs;
 

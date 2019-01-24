@@ -116,9 +116,8 @@ architecture arch of A2601top is
 	signal rst_cntr: unsigned(12 downto 0) := "0000000000000";
 	signal sc_clk: std_logic;
 	signal sc_r: std_logic;
-	signal sc_d_in: std_logic_vector(7 downto 0);
 	signal sc_d_out: std_logic_vector(7 downto 0);
-	signal sc_a: std_logic_vector(7 downto 0);
+	signal sc_a: std_logic_vector(9 downto 0);
 
 	subtype bss_type is std_logic_vector(3 downto 0);
 
@@ -144,6 +143,7 @@ architecture arch of A2601top is
 	constant BANKF4: bss_type := "0110";
 	constant BANKP2: bss_type := "0111";
 	constant BANKFA: bss_type := "1000";
+	constant BANKCV: bss_type := "1001";
 
 	signal bss:  bss_type := BANK00; 	--bank switching method
 	 
@@ -248,13 +248,15 @@ auv1 <= ("0" & unsigned(av1)) when (au1 = '1') else "00000";
 
 audio <= std_logic_vector(auv0 + auv1);
 
-sc_ram: work.ram256x8 port map(sc_clk, sc_r, sc_d_in, sc_d_out, sc_a);
+ram: work.ramx8 generic map(10) port map(clk, sc_r, cpu_d, sc_d_out, sc_a);
 
-sc_clk <= clk;
-sc_r <= '0' when cpu_a(12 downto 8) = "10000" and bss = BANKFA else
-        '0' when cpu_a(12 downto 7) = "100000" and sc = '1' else '1';
-sc_d_in <= cpu_d;
-sc_a <= cpu_a(7 downto 0) when bss = BANKFA else '0'&cpu_a(6 downto 0);
+sc_r <= '0' when (cpu_a(12 downto 10) = "101" and bss = BANKCV) or
+                 (cpu_a(12 downto  8) = "10000" and bss = BANKFA) or 
+                 (cpu_a(12 downto  7) = "100000" and sc = '1') else '1';
+
+sc_a <=    cpu_a(9 downto 0) when bss = BANKCV else
+    "00" & cpu_a(7 downto 0) when bss = BANKFA else
+   "000" & cpu_a(6 downto 0);
 
 -- ROM and SC output
 process(cpu_a, rom_do, sc_d_out, sc, bss, DpcFlags, DpcRandom, DpcMusicModes, DpcMusicFlags, soundAmplitudes)
@@ -273,15 +275,6 @@ begin
 	elsif (bss = BANKP2 and cpu_a >= "1" & x"004" and cpu_a <= "1" & x"007") then -- DPC READ - 0x1004 to 0x1007 (Sound)
 		ampI_v := "000";
 
-		--masked0_v := DpcMusicModes(0) and DpcMusicFlags(0);
-		--if (masked0_v /= x"00") then ampI_v(0) := '1'; end if;
-		--
-		--masked1_v := DpcMusicModes(1) and DpcMusicFlags(1);
-		--if (masked1_v /= x"00") then ampI_v(1) := '1'; end if;
-		--
-		--masked2_v := DpcMusicModes(2) and DpcMusicFlags(2);
-		--if (masked2_v /= x"00") then ampI_v(2) := '1'; end if;
-
 		if DpcMusicModes(0)(4) = '1' and DpcMusicFlags(0)(4) = '1' then ampI_v(0) := '1'; end if;
 		if DpcMusicModes(1)(4) = '1' and DpcMusicFlags(1)(4) = '1' then ampI_v(1) := '1'; end if;
 		if DpcMusicModes(2)(4) = '1' and DpcMusicFlags(2)(4) = '1' then ampI_v(2) := '1'; end if;
@@ -290,10 +283,13 @@ begin
 
 	elsif (bss = BANKP2 and cpu_a >= "1" & x"038" and cpu_a <= "1" & x"03f") then -- DPC READ -  0x1038 to 0x103f (Flags)
 		cpu_d <= DpcFlags(to_integer(unsigned(cpu_a(2 downto 0))));
-
-	elsif (cpu_a(12 downto 8) = "10001" and bss = BANKFA) then
+	elsif bss = BANKCV and cpu_a(12 downto 10) = "100" then
 		cpu_d <= sc_d_out;
-	elsif (cpu_a(12 downto 8) = "10000" and bss = BANKFA) then
+	elsif bss = BANKCV and cpu_a(12 downto 10) = "101" then
+		cpu_d <= "ZZZZZZZZ";
+	elsif bss = BANKFA and cpu_a(12 downto 8) = "10001" then
+		cpu_d <= sc_d_out;
+	elsif bss = BANKFA and cpu_a(12 downto 8) = "10000" then
 		cpu_d <= "ZZZZZZZZ";
 	elsif (cpu_a(12 downto 7) = "100001" and sc = '1') then
 		cpu_d <= sc_d_out;
@@ -316,16 +312,11 @@ with cpu_a(11 downto 10) select e0_bank <=
 tf_bank <= bank(1 downto 0) when (cpu_a(11) = '0') else "11";
 
 rom_a <=
-		"000" & cpu_a(11 downto 0) when bss = BANK00 else
-		"00" & bank(0) & cpu_a(11 downto 0) when bss = BANKF8 else
-		'0' & bank(1 downto 0) & cpu_a(11 downto 0) when bss = BANKFA else
-		'0' & bank(1 downto 0) & cpu_a(11 downto 0) when bss = BANKF6 else
-		bank(2 downto 0) & cpu_a(11 downto 0) when bss = BANKF4 else
-		"00" & bank(0) & cpu_a(11 downto 0) when bss = BANKFE else
 		"00" & e0_bank & cpu_a(9 downto 0) when bss = BANKE0 else
 		"00" & tf_bank & cpu_a(10 downto 0) when bss = BANK3F else
 		"0100" & std_logic_vector(2047 - DpcCounters(to_integer(unsigned(cpu_a(2 downto 0))))(10 downto 0)) when
-			bss = BANKP2 and cpu_a >= "1" & x"008" and cpu_a <= "1" & x"017" else
+							bss = BANKP2 and cpu_a >= "1" & x"008" and cpu_a <= "1" & x"017" else
+		"0000" & cpu_a(10 downto 0) when bss = BANKCV else
 		bank(2 downto 0) & cpu_a(11 downto 0);
 
 process(clk)
