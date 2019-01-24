@@ -144,6 +144,7 @@ architecture arch of A2601top is
 	constant BANKP2: bss_type := "0111";
 	constant BANKFA: bss_type := "1000";
 	constant BANKCV: bss_type := "1001";
+	constant BANK2K: bss_type := "1010";
 
 	signal bss:  bss_type := BANK00; 	--bank switching method
 	 
@@ -317,6 +318,7 @@ rom_a <=
 		"0100" & std_logic_vector(2047 - DpcCounters(to_integer(unsigned(cpu_a(2 downto 0))))(10 downto 0)) when
 							bss = BANKP2 and cpu_a >= "1" & x"008" and cpu_a <= "1" & x"017" else
 		"0000" & cpu_a(10 downto 0) when bss = BANKCV else
+		"0000" & cpu_a(10 downto 0) when bss = BANK2K else
 		bank(2 downto 0) & cpu_a(11 downto 0);
 
 process(clk)
@@ -492,6 +494,8 @@ process(rom_size, force_bs)
 begin
 	if(force_bs /= "0000") then
 		bss <= force_bs;
+	elsif(rom_size <= '0'&x"0800") then -- 2k and less
+		bss <= BANK2K;
 	elsif(rom_size <= '0'&x"1000") then -- 4k and less
 		bss <= BANK00;
 	elsif(rom_size <= '0'&x"2000") then -- 8k and less
