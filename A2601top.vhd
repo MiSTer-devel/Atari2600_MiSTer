@@ -129,7 +129,8 @@ architecture arch of A2601top is
 	signal FE_latch: std_logic;
 
 	signal cpu_a: std_logic_vector(12 downto 0);
-	signal cpu_d: std_logic_vector(7 downto 0);
+	signal cpu_di: std_logic_vector(7 downto 0);
+	signal cpu_do: std_logic_vector(7 downto 0);
 	signal cpu_r: std_logic;
 
 	constant BANK00: bss_type := "0000";
@@ -183,7 +184,8 @@ ms_A2601: work.A2601
 port map(
 	clk         => clk,
 	rst         => rst,
-	d           => cpu_d,
+	do          => cpu_do,
+	di          => cpu_di,
 	a           => cpu_a,
 	pa          => pa,
 	pb          => pb,
@@ -246,7 +248,7 @@ auv1 <= ("0" & unsigned(av1)) when (au1 = '1') else "00000";
 
 audio <= std_logic_vector(auv0 + auv1);
 
-ram: work.ramx8 generic map(10) port map(clk, sc_r, cpu_d, sc_d_out, sc_a);
+ram: work.ramx8 generic map(10) port map(clk, sc_r, cpu_do, sc_d_out, sc_a);
 
 sc_r <= '0' when (cpu_a(12 downto 10) = "101" and bss = BANKCV) or
                  (cpu_a(12 downto  8) = "10000" and bss = BANKFA) or 
@@ -265,11 +267,11 @@ process(cpu_a, rom_do, sc_d_out, sc, bss, DpcFlags, DpcRandom, DpcMusicModes, Dp
 	variable newlow_v : integer;
 begin
 	if (bss = BANKP2 and cpu_a >= "1" & x"008" and cpu_a <= "1" & x"00f")  then -- DPC READ - 0x1008 to 0x100f (read graphics from extra 2kb)
-		cpu_d <= rom_do;
+		cpu_di <= rom_do;
 	elsif (bss = BANKP2 and cpu_a >= "1" & x"010" and cpu_a <= "1" & x"017")  then -- DPC READ - 0x1010 to 0x1017 (read graphics from extra 2kb ANDed)
-		cpu_d <= rom_do and DpcFlags(to_integer(unsigned(cpu_a(2 downto 0))));
+		cpu_di <= rom_do and DpcFlags(to_integer(unsigned(cpu_a(2 downto 0))));
 	elsif (bss = BANKP2 and cpu_a >= "1" & x"000" and cpu_a <= "1" & x"003") then -- DPC READ - 0x1000 to 0x1003 (random number)
-		cpu_d <= DpcRandom;
+		cpu_di <= DpcRandom;
 	elsif (bss = BANKP2 and cpu_a >= "1" & x"004" and cpu_a <= "1" & x"007") then -- DPC READ - 0x1004 to 0x1007 (Sound)
 		ampI_v := "000";
 
@@ -277,26 +279,26 @@ begin
 		if DpcMusicModes(1)(4) = '1' and DpcMusicFlags(1)(4) = '1' then ampI_v(1) := '1'; end if;
 		if DpcMusicModes(2)(4) = '1' and DpcMusicFlags(2)(4) = '1' then ampI_v(2) := '1'; end if;
 
-		cpu_d <= soundAmplitudes(to_integer(unsigned(ampI_v)));
+		cpu_di <= soundAmplitudes(to_integer(unsigned(ampI_v)));
 
 	elsif (bss = BANKP2 and cpu_a >= "1" & x"038" and cpu_a <= "1" & x"03f") then -- DPC READ -  0x1038 to 0x103f (Flags)
-		cpu_d <= DpcFlags(to_integer(unsigned(cpu_a(2 downto 0))));
+		cpu_di <= DpcFlags(to_integer(unsigned(cpu_a(2 downto 0))));
 	elsif bss = BANKCV and cpu_a(12 downto 10) = "100" then
-		cpu_d <= sc_d_out;
+		cpu_di <= sc_d_out;
 	elsif bss = BANKCV and cpu_a(12 downto 10) = "101" then
-		cpu_d <= "ZZZZZZZZ";
+		cpu_di <= x"FF";
 	elsif bss = BANKFA and cpu_a(12 downto 8) = "10001" then
-		cpu_d <= sc_d_out;
+		cpu_di <= sc_d_out;
 	elsif bss = BANKFA and cpu_a(12 downto 8) = "10000" then
-		cpu_d <= "ZZZZZZZZ";
+		cpu_di <= x"FF";
 	elsif (cpu_a(12 downto 7) = "100001" and sc = '1') then
-		cpu_d <= sc_d_out;
+		cpu_di <= sc_d_out;
 	elsif (cpu_a(12 downto 7) = "100000" and sc = '1') then
-		cpu_d <= "ZZZZZZZZ";
+		cpu_di <= x"FF";
 	elsif (cpu_a(12) = '1') then
-		cpu_d <= rom_do;
+		cpu_di <= rom_do;
 	else
-		cpu_d <= "ZZZZZZZZ";
+		cpu_di <= x"FF";
 	end if;
 end process;
 
@@ -424,19 +426,19 @@ begin
 								case cpu_a(5 downto 3)  is
 									when "000" => --0x1040 to 0x1047
 										-- DFx top count
-										DpcTops(w_index_v) <= cpu_d;
+										DpcTops(w_index_v) <= cpu_do;
 										DpcFlags(w_index_v) <= x"00";
 									when "001" => -- 0x1048 to 0x104F
 										-- DFx bottom count
-										DpcBottoms(w_index_v) <= cpu_d;
+										DpcBottoms(w_index_v) <= cpu_do;
 									when "010" => -- 0x1050 to 0x1057
 										-- DFx counter low
-										DpcCounters(w_index_v)(7 downto 0) <= cpu_d;
+										DpcCounters(w_index_v)(7 downto 0) <= cpu_do;
 									when "011" => -- 0x1058 to 105F
 										-- DFx counter high
-										DpcCounters(w_index_v)(10 downto 8) <= cpu_d(2 downto 0);
+										DpcCounters(w_index_v)(10 downto 8) <= cpu_do(2 downto 0);
 										if(w_index_v >= 5) then -- 0x105D to 0x105F
-											DpcMusicModes(5 - w_index_v) <= "000" & cpu_d(4) & "0000"; -- Music On or Off
+											DpcMusicModes(5 - w_index_v) <= "000" & cpu_do(4) & "0000"; -- Music On or Off
 										end if;
 									when "110" => -- 0x1070 to 0x1077
 										DpcRandom <= x"01";
@@ -455,7 +457,7 @@ begin
 				when BANKFE => -- BANK FE fixed by Victor Trucco - 24/05/2018
 					-- If was latched, check the 5th bit of the data bus for the bank-switch
 					if FE_latch = '1' then
-						bank <= "000"& not cpu_d(5);
+						bank <= "000"& not (cpu_di(5) and cpu_do(5));
 					end if;
 
 					-- Access at 0x01fe trigger the latch, but on the next cpu cycle
@@ -474,7 +476,7 @@ begin
 					end if;
 				when BANK3F =>
 					if (cpu_a = "0" & X"03F") then
-						bank(1 downto 0) <= cpu_d(1 downto 0);
+						bank(1 downto 0) <= cpu_do(1 downto 0);
 					end if;
 				when others =>
 					null;

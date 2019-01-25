@@ -24,7 +24,8 @@ entity A2601 is
 	port(
 		clk: in std_logic;
 		rst: in std_logic;
-		d: inout std_logic_vector(7 downto 0);
+		do: out std_logic_vector(7 downto 0);
+		di: in std_logic_vector(7 downto 0);
 		a: out std_logic_vector(12 downto 0);
 		r: out std_logic;
 		pa: inout std_logic_vector(7 downto 0);
@@ -59,6 +60,9 @@ architecture arch of A2601 is
 	signal read    : std_logic;
 	signal ph0     : std_logic;
 	signal ph2     : std_logic;
+	signal cpu_do  : std_logic_vector(7 downto 0);
+	signal tia_do  : std_logic_vector(7 downto 0);
+	signal riot_do : std_logic_vector(7 downto 0);
 begin
 
 ph0_out <= not clk and ph0;
@@ -66,13 +70,15 @@ ph2_out <= ph2;
 
 r <= read;
 a <= cpu_a;
+do <= cpu_do and tia_do and riot_do;
 
 cpu_A6507: work.A6507
 port map(
 	clk     => not clk and ph0,
 	rst     => rst,
 	rdy     => rdy,
-	d       => d,
+	do      => cpu_do,
+	di      => di and tia_do and riot_do,
 	ad      => cpu_a,
 	r       => read
 );
@@ -84,7 +90,8 @@ port map(
 	rs      => cpu_a(9),
 	cs      => not cpu_a(12) and cpu_a(7),
 	irq     => open,
-	d       => d,
+	di      => cpu_do,
+	do      => riot_do,
 	pa      => pa,
 	pb      => pb,
 	pa7     => '0',
@@ -97,7 +104,8 @@ port map(
 	cs         => not cpu_a(12) and not cpu_a(7),
 	r          => read,
 	a          => cpu_a(5 downto 0),
-	d          => d,
+	di         => cpu_do,
+	do         => tia_do,
 	colu       => colu,
 	hsyn       => hsyn,
 	vsyn       => vsyn,

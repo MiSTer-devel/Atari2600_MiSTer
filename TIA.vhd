@@ -574,7 +574,8 @@ entity TIA is
 		cs: in std_logic;
 		r: in std_logic;
 		a: in std_logic_vector(5 downto 0);
-		d: inout std_logic_vector(7 downto 0);
+		di: in std_logic_vector(7 downto 0);
+		do: out std_logic_vector(7 downto 0);
 		colu: out std_logic_vector(6 downto 0);
 		hsyn: out std_logic;
 		vsyn: out std_logic;
@@ -874,78 +875,78 @@ begin
 
     inpt45_rst <= '1' when (a = A_VBLANK) and (r = '0') and (cs = '1') else '0';
 
-    process(clk, a, d, r, cs, cx, inpt45_len, inpt0, inpt1, inpt2, inpt3, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2)
+    process(clk, a, di, r, cs, cx, inpt45_len, inpt0, inpt1, inpt2, inpt3, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2)
     begin
         if (r = '1') and (cs = '1') then
-            d(5 downto 0) <= "000000";
+            do(5 downto 0) <= "000000";
 
             case a(3 downto 0) is
                 when A_CXM0P =>
-                    d(7 downto 6) <= cx(1 downto 0);
+                    do(7 downto 6) <= cx(1 downto 0);
                 when A_CXM1P =>
-                    d(7 downto 6) <= cx(3 downto 2);
+                    do(7 downto 6) <= cx(3 downto 2);
                 when A_CXP0FB =>
-                    d(7 downto 6) <= cx(5 downto 4);
+                    do(7 downto 6) <= cx(5 downto 4);
                 when A_CXP1FB =>
-                    d(7 downto 6) <= cx(7 downto 6);
+                    do(7 downto 6) <= cx(7 downto 6);
                 when A_CXM0FB =>
-                    d(7 downto 6) <= cx(9 downto 8);
+                    do(7 downto 6) <= cx(9 downto 8);
                 when A_CXM1FB =>
-                    d(7 downto 6) <= cx(11 downto 10);
+                    do(7 downto 6) <= cx(11 downto 10);
                 when A_CXBLPF =>
-                    d(7) <= cx(12);
-                    d(6) <= 'Z';
+                    do(7) <= cx(12);
+                    do(6) <= '1';
                 when A_CXPPMM =>
-                    d(7 downto 6) <= cx(14 downto 13);
+                    do(7 downto 6) <= cx(14 downto 13);
 					 when A_INPT0 =>
 						  if(paddle_ena1 = '1') then
-								d(7) <= inpt0;
+								do(7) <= inpt0;
 						  else
-						 		d(7) <= '1';
+						 		do(7) <= '1';
 						  end if;
-                    d(6) <= '0';
+                    do(6) <= '0';
                 when A_INPT1 =>
 						  if(paddle_ena1 = '1') then
-								d(7) <= inpt1;
+								do(7) <= inpt1;
 						  else
-						 		d(7) <= '1';
+						 		do(7) <= '1';
 						  end if;
-                    d(6) <= '0';
+                    do(6) <= '0';
                 when A_INPT2 =>
 						  if(paddle_ena2 = '1') then
-								d(7) <= inpt2;
+								do(7) <= inpt2;
 						  else
-						 		d(7) <= '1';
+						 		do(7) <= '1';
 						  end if;
-                    d(6) <= '0';
+                    do(6) <= '0';
                 when A_INPT3 =>
 						  if(paddle_ena2 = '1') then
-								d(7) <= inpt3;
+								do(7) <= inpt3;
 						  else
-						 		d(7) <= '1';
+						 		do(7) <= '1';
 						  end if;
-                    d(6) <= '0';
+                    do(6) <= '0';
                 when A_INPT4 =>
                     if (inpt45_len = '1') then
-                        d(7) <= inpt4_l;
+                        do(7) <= inpt4_l;
                     else
-                        d(7) <= inpt4;
+                        do(7) <= inpt4;
                     end if;
                     --d(6) <= 'Z';
-                    d(6) <= '0';
+                    do(6) <= '0';
                 when A_INPT5 =>
                     if (inpt45_len = '1') then
-                        d(7) <= inpt5_l;
+                        do(7) <= inpt5_l;
                     else
-                        d(7) <= inpt5;
+                        do(7) <= inpt5;
                     end if;
                     --d(6) <= 'Z';
-                    d(6) <= '0';
+                    do(6) <= '0';
                 when others =>
-                    d(7 downto 6) <= "--";
+                    do(7 downto 6) <= "11";
             end case;
         else
-            d <= "ZZZZZZZZ";
+            do <= x"FF";
         end if;
 
         if rising_edge(clk) then
@@ -953,27 +954,27 @@ begin
             if (r = '0') and (cs = '1') and (phi2_d = '0' and phi2 = '1') then
                 case a is
                     when A_VSYNC =>
-                        vsync <= d(1);
+                        vsync <= di(1);
                     when A_VBLANK =>
-                        inpt03_chg <= d(7);
-                        inpt45_len <= d(6);
-                        vblank <= d(1);
+                        inpt03_chg <= di(7);
+                        inpt45_len <= di(6);
+                        vblank <= di(1);
                     when A_PF0 =>
-                        pf_gr(3 downto 0) <= d(7 downto 4);
+                        pf_gr(3 downto 0) <= di(7 downto 4);
                     when A_PF1 =>
-                        pf_gr(11 downto 4) <= d;
+                        pf_gr(11 downto 4) <= di;
                     when A_PF2 =>
-                        pf_gr(19 downto 12) <= d;
+                        pf_gr(19 downto 12) <= di;
                     when A_CTRLPF =>
-                        pf_reflect <= d(0);
-                        pf_priority <= d(2);
-                        bl_size <= d(5 downto 4);
+                        pf_reflect <= di(0);
+                        pf_priority <= di(2);
+                        bl_size <= di(5 downto 4);
                     when A_NUSIZ0 =>
-                        p0_nusiz <= d(2 downto 0);
-                        m0_size <= d(5 downto 4);
+                        p0_nusiz <= di(2 downto 0);
+                        m0_size <= di(5 downto 4);
                     when A_NUSIZ1 =>
-                        p1_nusiz <= d(2 downto 0);
-                        m1_size <= d(5 downto 4);
+                        p1_nusiz <= di(2 downto 0);
+                        m1_size <= di(5 downto 4);
                     when A_HMCLR =>
                         p0_hmove <= "0000";
                         p1_hmove <= "0000";
@@ -981,62 +982,62 @@ begin
                         m1_hmove <= "0000";
                         bl_hmove <= "0000";
                     when A_HMP0 =>
-                        p0_hmove <= d(7 downto 4);
+                        p0_hmove <= di(7 downto 4);
                     when A_HMP1 =>
-                        p1_hmove <= d(7 downto 4);
+                        p1_hmove <= di(7 downto 4);
                     when A_HMM0 =>
-                        m0_hmove <= d(7 downto 4);
+                        m0_hmove <= di(7 downto 4);
                     when A_HMM1 =>
-                        m1_hmove <= d(7 downto 4);
+                        m1_hmove <= di(7 downto 4);
                     when A_HMBL =>
-                        bl_hmove <= d(7 downto 4);
+                        bl_hmove <= di(7 downto 4);
                     when A_ENAM0 =>
-                        m0_enable <= d(1);
+                        m0_enable <= di(1);
                     when A_ENAM1 =>
-                        m1_enable <= d(1);
+                        m1_enable <= di(1);
                     when A_ENABL =>
-                        bl_ennew <= d(1);
+                        bl_ennew <= di(1);
                     when A_GRP0 =>
                         p1_grpold <= p1_grpnew;
-                        p0_grpnew <= d;
+                        p0_grpnew <= di;
                     when A_GRP1 =>
                         bl_enold <= bl_ennew;
                         p0_grpold <= p0_grpnew;
-                        p1_grpnew <= d;
+                        p1_grpnew <= di;
                     when A_REFP0 =>
-                        p0_reflect <= d(3);
+                        p0_reflect <= di(3);
                     when A_REFP1 =>
-                        p1_reflect <= d(3);
+                        p1_reflect <= di(3);
                     when A_VDELP0 =>
-                        p0_vdel <= d(0);
+                        p0_vdel <= di(0);
                     when A_VDELP1 =>
-                        p1_vdel <= d(0);
+                        p1_vdel <= di(0);
                     when A_VDELBL =>
-                        bl_vdel <= d(0);
+                        bl_vdel <= di(0);
                     when A_COLUP0 =>
-                        p0_colu <= d(7 downto 1);
+                        p0_colu <= di(7 downto 1);
                     when A_COLUP1 =>
-                        p1_colu <= d(7 downto 1);
+                        p1_colu <= di(7 downto 1);
                     when A_COLUPF =>
-                        pf_colu <= d(7 downto 1);
+                        pf_colu <= di(7 downto 1);
                     when A_COLUBK =>
-                        bk_colu <= d(7 downto 1);
+                        bk_colu <= di(7 downto 1);
                     when A_AUDF0 =>
-                        a0_freq <= d(4 downto 0);
+                        a0_freq <= di(4 downto 0);
                     when A_AUDF1 =>
-                        a1_freq <= d(4 downto 0);
+                        a1_freq <= di(4 downto 0);
                     when A_AUDC0 =>
-                        a0_ctrl <= d(3 downto 0);
+                        a0_ctrl <= di(3 downto 0);
                     when A_AUDC1 =>
-                        a1_ctrl <= d(3 downto 0);
+                        a1_ctrl <= di(3 downto 0);
                     when A_AUDV0 =>
-                        a0_vol <= d(3 downto 0);
+                        a0_vol <= di(3 downto 0);
                     when A_AUDV1 =>
-                        a1_vol <= d(3 downto 0);
+                        a1_vol <= di(3 downto 0);
                     when A_RESMP0 =>
-                        m0_resp0 <= d(1);
+                        m0_resp0 <= di(1);
                     when A_RESMP1 =>
-                        m1_resp1 <= d(1);
+                        m1_resp1 <= di(1);
                     when others => null;
                 end case;
             end if;

@@ -58,7 +58,8 @@ entity A6532 is
          rs: in std_logic;
          cs: in std_logic;
          irq: out std_logic;
-         d: inout std_logic_vector(7 downto 0) := "ZZZZZZZZ";
+         di: in std_logic_vector(7 downto 0);
+         do: out std_logic_vector(7 downto 0);
          pa: inout std_logic_vector(7 downto 0);
          pb: inout std_logic_vector(7 downto 0);
          pa7: in std_logic;
@@ -106,7 +107,7 @@ begin
         pb_in(i) <= pb(i) when pb_ddr(i) = '0' else pb_reg(i);
     end generate;
 
-    ram: work.ramx8 port map(clk, ram_r, d, ram_d_out, a);
+    ram: work.ramx8 port map(clk, ram_r, di, ram_d_out, a);
 
     ram_r <= (not rs and r) or rs or not cs;
 
@@ -121,31 +122,31 @@ begin
     begin
         if r = '1' then
             if (cs = '0') then
-                d <= "ZZZZZZZZ";
+                do <= x"FF";
             elsif rs = '0' then
-                d <= ram_d_out;
+                do <= ram_d_out;
             elsif a(2) = '0' then
                 case a(1 downto 0) is
                     when "00" =>
-                        d <= pa_in;
+                        do <= pa_in;
                     when "01" =>
-                        d <= pa_ddr;
+                        do <= pa_ddr;
                     when "10" =>
-                        d <= pb_in;
+                        do <= pb_in;
                     when "11" =>
-                        d <= pb_ddr;
+                        do <= pb_ddr;
                     when others =>
                         null;
                 end case;
             elsif a(0) = '0' then
-                d <= timer;
+                do <= timer;
             elsif a(0) = '1' then
-                d <= timer_intr & edge_intr & "000000";
+                do <= timer_intr & edge_intr & "000000";
             else
-                d <= "--------";
+                do <= x"FF";
             end if;
         else
-            d <= "ZZZZZZZZ";
+            do <= x"FF";
         end if;
     end process;
 
@@ -156,11 +157,11 @@ begin
                     if a(2) = '0' then
                         case a(1 downto 0) is
                             when "01" =>
-                                pa_ddr <= d;
+                            	pa_ddr <= di;
                             when "10" =>
-                                pb_reg <= d;
+                            	pb_reg <= di;
                             when "11" =>
-                                pb_ddr <= d;
+                            	pb_ddr <= di;
                             when others =>
                                 null;
                         end case;
@@ -204,7 +205,7 @@ begin
             end if;
 
             if (timer_write = '1') then
-                timer <= d;
+				timer <= di;
                 timer_intvl <= a(1 downto 0);
                 timer_irq_en <= a(3);
                 timer_dvdr <= "00000000001";
