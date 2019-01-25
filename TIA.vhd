@@ -29,26 +29,22 @@ entity lfsr6 is
 end lfsr6;
 
 architecture arch of lfsr6 is 
-    
     signal d: std_logic_vector(5 downto 0);
     signal prst_l: std_logic := '1';
-
 begin
 
     o <= d;
 
-    process(clk, prst)  
+    process(clk)  
     begin           
-        
-        if (clk'event and clk = '1') then           
+        if rising_edge(clk) then           
             if (prst = '1' and prst_l = '0') then 
                 prst_l <= '1'; 
             elsif (cnt = '1') then                      
                 prst_l <= '0';      
             end if;             
         end if;             
-        
-        if (clk'event and clk = '1') then           
+        if rising_edge(clk) then           
             if (cnt = '1') then
                 if (prst_l = '1') then 
                     d <= "000000";                                      
@@ -57,9 +53,7 @@ begin
                 end if;                             
             end if;
         end if;
-        
     end process;
-
 end arch;
 
 library ieee;
@@ -74,18 +68,14 @@ entity cntr2 is
 end cntr2;
 
 architecture arch of cntr2 is 
-    
     signal d: std_logic_vector(1 downto 0) := "00";
-    
 begin
 
     o <= d;
 
-    process(clk, rst)
+    process(clk)
     begin
---      if (rst = '1') then 
---          d <= "00";
-        if (clk'event and clk = '1') then       
+        if rising_edge(clk) then       
             if (rst = '1') then 
                 d <= "00";
             elsif (en = '1') then 
@@ -115,16 +105,14 @@ entity cntr3 is
 end cntr3;
 
 architecture arch of cntr3 is 
-    
     signal d: unsigned(2 downto 0) := "000";
-    
 begin
 
     o <= std_logic_vector(d);
     
-    process(clk, rst)
+    process(clk)
     begin       
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             if (rst = '1') then 
                 d <= "000";
             elsif (en = '1') then           
@@ -132,7 +120,6 @@ begin
             end if;
         end if;
     end process;
-    
 end arch;
 
 library ieee;
@@ -151,7 +138,6 @@ entity audio is
 end audio;
 
 architecture arch of audio is 
-    
     signal dvdr: unsigned(4 downto 0) := "00000";
     signal sr4: std_logic_vector(3 downto 0) := "0000";
     signal sr5: std_logic_vector(4 downto 0) := "00000";
@@ -160,12 +146,11 @@ architecture arch of audio is
     signal sr5_in: std_logic;       
     signal sr4_cnt: std_logic;  
     signal sr5_cnt: std_logic;      
-    
 begin
 
     process(clk)
     begin 
-        if (clk'event and clk = '1') then           
+        if rising_edge(clk) then           
             if (cnt = '1') then                 
                 if (sr4_cnt = '1') then 
                     sr4 <= sr4_in & sr4(3 downto 1);
@@ -181,13 +166,13 @@ begin
             end if;
         end if;                     
     end process;    
-    
+
     sr5_in <= '1' when 
         (ctrl = "0000") or 
         (sr5_tap = '1') or      
         (sr5 = "00000" and (ctrl(0) = '1' or ctrl(1) = '1' or sr4 = "1111"))
         else '0';
-        
+
     sr4_in <= '1' when 
         (ctrl = "0000") or 
         (ctrl(3 downto 2) = "00" and (sr4 = "1111" or ((sr4(1) xnor sr4(0)) = '1'))) or
@@ -426,9 +411,7 @@ entity paddle is
 end paddle;
 
 architecture arch of paddle is
-
-signal hsync_d: std_logic;
-
+	signal hsync_d: std_logic;
 begin
     process(clk)
         variable cnt: integer range 0 to 190;
@@ -482,7 +465,6 @@ architecture arch of ball is
     signal start1: std_logic := '0';    
     signal start2: std_logic := '0';
     
-
     signal ph1: std_logic;
     signal ph1_edge: std_logic;
     
