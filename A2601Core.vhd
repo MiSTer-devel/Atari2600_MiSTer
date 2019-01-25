@@ -28,8 +28,8 @@ entity A2601 is
 		di: in std_logic_vector(7 downto 0);
 		a: out std_logic_vector(12 downto 0);
 		r: out std_logic;
-		pa: inout std_logic_vector(7 downto 0);
-		pb: inout std_logic_vector(7 downto 0);
+		pa: in std_logic_vector(7 downto 0);
+		pb: in std_logic_vector(7 downto 0);
 		paddle_0: in std_logic_vector(7 downto 0);
 		paddle_1: in std_logic_vector(7 downto 0);
 		paddle_ena1: in std_logic;
@@ -86,14 +86,15 @@ port map(
 riot_A6532: work.A6532
 port map(
 	clk     => not clk and ph2,
+	res     => rst,
 	r       => read,
 	rs      => cpu_a(9),
 	cs      => not cpu_a(12) and cpu_a(7),
 	irq     => open,
 	di      => cpu_do,
 	do      => riot_do,
-	pa      => pa,
-	pb      => pb,
+	pai     => pa,
+	pbi     => pb,
 	pa7     => '0',
 	a       => cpu_a(6 downto 0)
 );
