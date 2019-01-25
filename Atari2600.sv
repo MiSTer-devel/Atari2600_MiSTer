@@ -126,7 +126,7 @@ localparam CONF_STR = {
 	"F,*;",
 	"O9A,SuperChip,Auto,Disable,Enable;",
 	"-;",
-	"O1,Video standard,NTSC,PAL;",
+	"O1,Colors,NTSC,PAL;",
 	"O2,Video mode,Color,Mono;",
 	"O8,Aspect ratio,4:3,16:9;", 
 	"O57,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
@@ -162,16 +162,8 @@ always @(negedge clk_sys) begin
 	ce_pix <= !div;
 end
 
-wire reset = RESET | status[0] | ~initReset_n | buttons[1] | ioctl_download;
+wire reset = RESET | status[0] | buttons[1] | ioctl_download;
 
-reg initReset_n = 0;
-always @(posedge clk_sys) begin
-	int to = 0;
-	if(ioctl_download) initReset_n <= 1;
-	
-	if(to < 2000000) to <= to + 1;
-	else initReset_n <= 1;
-end
 
 //////////////////   HPS I/O   ///////////////////
 wire [15:0] joy_0;
