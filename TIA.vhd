@@ -273,9 +273,10 @@ begin
 
     mrst <= '1' when fstob = '1' and scan_out = "001" else '0';
 
-    process(clk, count)
+    process(clk)
     begin
-        if (clk'event and clk = '1' and count = '1') then
+		if rising_edge(clk) then
+			if (count = '1') then
             if (ph1_edge = '1') then
                 if (lfsr_out = "101101") or
                     ((lfsr_out = "111000") and ((nusiz = "001") or (nusiz = "011"))) or
@@ -291,12 +292,14 @@ begin
                     start <= '0';
                 end if;
             end if;
-        end if;
+			end if;
+		end if;
     end process;
 
-    process(clk, scan_clk, start, scan_out, count)
+    process(clk)
     begin
-        if (clk'event and clk = '1' and count = '1') then
+		if rising_edge(clk) then
+			if (count = '1') then
             if (scan_clk = '1') then
                 if (start = '1') then
                     scan_en <= '1';
@@ -304,12 +307,14 @@ begin
                     scan_en <= '0';
                 end if;
             end if;
-        end if;
+			end if;
+		end if;
     end process;
 
-    process (clk, ph0, ph1, count)
+    process (clk)
     begin
-        if (clk'event and clk = '1' and count = '1') then
+		if rising_edge(clk) then
+			if (count = '1') then
             if (nusiz = "111") then
                 scan_clk <= ph1;
             elsif (nusiz = "101") then
@@ -317,7 +322,8 @@ begin
             else
                 scan_clk <= '1';
             end if;
-        end if;
+			end if;
+		end if;
     end process;
 
     scan_adr <= scan_out when reflect = '1' else not scan_out;
@@ -378,7 +384,7 @@ begin
     
     process(clk)
     begin 
-        if (clk'event and clk = '1') then                       
+        if rising_edge(clk) then                       
             if (ph1_edge = '1') then            
                 if (lfsr_out = "101101") or
                     ((lfsr_out = "111000") and ((nusiz = "001") or (nusiz = "011"))) or 
@@ -424,10 +430,10 @@ architecture arch of paddle is
 signal hsync_d: std_logic;
 
 begin
-    process(clk, rst, hsync)
+    process(clk)
         variable cnt: integer range 0 to 190;
     begin
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             hsync_d <= hsync;
             if( rst = '1' ) then
                 -- map -128..127 -> 190..0
@@ -496,7 +502,7 @@ begin
     
     process(clk)
     begin 
-        if (clk'event and clk = '1') then           
+        if rising_edge(clk) then           
             if (ph1_edge = '1') then            
                 if (lfsr_out = "101101") or (prst = '1') then
                     start1 <= '1';                  
@@ -564,7 +570,6 @@ use work.TIA_common.all;
 entity TIA is
 	port
 	(
-		vid_clk: in std_logic;
 		clk: in std_logic;
 		cs: in std_logic;
 		r: in std_logic;
@@ -715,8 +720,6 @@ architecture arch of TIA is
     signal hh1: std_logic;
     signal hh1_edge: std_logic;
 
-    --signal clk, clkx2: std_logic;
-
     signal sync: std_logic;
     signal blank: std_logic;
 
@@ -725,15 +728,11 @@ architecture arch of TIA is
     signal col_lut_idx: std_logic_vector(7 downto 0);
     signal col_lu: unsigned(7 downto 0);
 
-    signal vid_clk_dvdr: unsigned(2 downto 0) := "000";
-	 
-	  signal vga_colu: std_logic_vector(6 downto 0);
-
-     signal inpt03_chg: std_logic;
-	  signal inpt0: std_logic;
-	  signal inpt1: std_logic;
-	  signal inpt2: std_logic;
-	  signal inpt3: std_logic;
+    signal inpt03_chg: std_logic;
+    signal inpt0: std_logic;
+    signal inpt1: std_logic;
+    signal inpt2: std_logic;
+    signal inpt3: std_logic;
 
 begin
     paddle0: work.paddle port map(clk, hsync, paddle_0, inpt03_chg, inpt0);
@@ -761,9 +760,9 @@ begin
     h_lfsr_cnt <= '1' when (hh1_edge = '1') else '0';
     h_cntr_rst <= '1' when (r = '0') and (cs = '1') and (a = A_RSYNC) else '0';
 
-    h_decode: process(clk, h_lfsr_out)
+    h_decode: process(clk)
     begin
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             if (hh1_edge = '1') then
                 case h_lfsr_out is
                     when "111100" =>
@@ -795,7 +794,7 @@ begin
 
     process(clk)
     begin
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             if (h_lfsr_out = "010100") and (hh1_edge = '1') then
                 hmove <= '0';
             elsif (hmove_set = '1') then
@@ -806,7 +805,7 @@ begin
 
     process(clk)
     begin
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             if (h_lfsr_out = "000000" and hh1_edge = '1') then
                 wsync <= '0';
             elsif (r = '0') and (cs = '1') and (a = A_WSYNC) then
@@ -837,9 +836,9 @@ begin
     bl: work.ball
         port map(clk, bl_rst, bl_count, bl_ennew, bl_enold, bl_vdel, bl_size, bl_pix);
 
-    pf_output: process(clk, h_lfsr_cnt)
+    pf_output: process(clk)
     begin
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             if (h_lfsr_cnt = '1') then
                 if (pf_cnt = '1') then
                     if (pf_adr = "10011") and (center = '0') and (pf_reflect = '0') then
@@ -949,7 +948,7 @@ begin
             d <= "ZZZZZZZZ";
         end if;
 
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             phi2_d <= phi2;
             if (r = '0') and (cs = '1') and (phi2_d = '0' and phi2 = '1') then
                 case a is
@@ -1044,11 +1043,9 @@ begin
         end if;
     end process;
 
-    output: process(
-        clk, hblank, pf_priority, p0_pix, p1_pix, m0_pix, m1_pix,
-        bl_pix, pf_pix, p0_colu, p1_colu, pf_colu, bk_colu)
+    output: process(clk)
     begin
-        if (clk = '1' and clk'event) then
+        if rising_edge(clk) then
             if (hblank = '1' or vblank = '1') then
                 int_colu <= "0000000";
             elsif (pf_priority = '0') then
@@ -1079,9 +1076,9 @@ begin
 
     colu <= int_colu;
 
-    sec_delay: process(clk, r)
+    sec_delay: process(clk)
     begin
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             if (hmove_set = '1') then
                 sec_dl(1) <= '1';
             elsif (sec = '1') then
@@ -1098,10 +1095,10 @@ begin
 
     hmove_cntr_sl <= std_logic_vector(hmove_cntr);
 
-    motion: process(clk, r, hmove_set)
+    motion: process(clk)
     begin
 
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             if (hh1_edge = '1') then
                 if (sec = '1') then
                     hmove_cntr <= hmove_cntr + 1;
@@ -1149,9 +1146,9 @@ begin
         end if;
     end process;
 
-    collision: process(clk, cx_clr)
+    collision: process(clk)
     begin
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             if (cx_clr = '1') then
                 cx <= "000000000000000";
             else
@@ -1209,7 +1206,7 @@ begin
 
     process(clk)
     begin
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             phi2<=phi0;
             if (h_lfsr_out = "010100" and hh1_edge = '1') then
                 clk_dvdr <= "01";
@@ -1234,7 +1231,7 @@ begin
 
 	process(clk, inpt45_rst, inpt45_len, inpt4, inpt5)
 	begin
-		if (clk'event and clk = '1') then
+		if rising_edge(clk) then
 			if (inpt45_rst = '1') then
 				inpt4_l <= '1';
 				inpt5_l <= '1';
@@ -1251,7 +1248,7 @@ begin
 
 	
 	Inst_VGAColorTable: work.VGAColorTable PORT MAP(
-		clk => vid_clk,
+		clk => clk,
 		lum => '0' & int_colu(2 downto 0),
 		hue => int_colu(6 downto 3),
 		mode => '0' & pal,	-- 00 = NTSC, 01 = PAL

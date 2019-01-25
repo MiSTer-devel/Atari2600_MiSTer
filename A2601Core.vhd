@@ -22,7 +22,6 @@ use ieee.std_logic_1164.all;
 
 entity A2601 is
 	port(
-		clk_vid: in std_logic;
 		clk: in std_logic;
 		rst: in std_logic;
 		d: inout std_logic_vector(7 downto 0);
@@ -59,23 +58,18 @@ architecture arch of A2601 is
 	signal cpu_a   : std_logic_vector(12 downto 0);
 	signal read    : std_logic;
 	signal ph0     : std_logic;
-	signal ph0d    : std_logic;
-	signal ph0rise : std_logic;
 	signal ph2     : std_logic;
 begin
 
-ph0_out <= ph0;
+ph0_out <= not clk and ph0;
 ph2_out <= ph2;
 
 r <= read;
 a <= cpu_a;
 
-ph0d <= ph0 when falling_edge(clk);
-ph0rise <= not ph0d and ph0;
-
 cpu_A6507: work.A6507
 port map(
-	clk     => not clk and ph0rise,
+	clk     => not clk and ph0,
 	rst     => rst,
 	rdy     => rdy,
 	d       => d,
@@ -85,8 +79,7 @@ port map(
 
 riot_A6532: work.A6532
 port map(
-	clk     => clk,
-	ph2     => ph2,
+	clk     => not clk and ph2,
 	r       => read,
 	rs      => cpu_a(9),
 	cs      => not cpu_a(12) and cpu_a(7),
@@ -100,7 +93,6 @@ port map(
 
 TIA: work.TIA
 port map(
-	vid_clk    => clk_vid,
 	clk        => clk,
 	cs         => not cpu_a(12) and not cpu_a(7),
 	r          => read,

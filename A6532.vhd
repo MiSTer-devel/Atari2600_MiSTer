@@ -30,14 +30,13 @@ entity ramx8 is
 end ramx8;
 
 architecture arch of ramx8 is
-    type ram_type is array (0 to 2**addr_width - 1) of
-        std_logic_vector(7 downto 0);
+    type ram_type is array (0 to 2**addr_width - 1) of std_logic_vector(7 downto 0);
     signal ram: ram_type;
 begin
 
     process (clk, r, a)
     begin
-        if (clk'event and clk = '1') then
+        if rising_edge(clk) then
             if (r = '1') then
                 d_out <= ram(to_integer(unsigned(a)));
             else
@@ -55,7 +54,6 @@ use ieee.std_logic_unsigned.all;
 
 entity A6532 is
     port(clk: in std_logic;
-         ph2: in std_logic;
          r: in std_logic;
          rs: in std_logic;
          cs: in std_logic;
@@ -95,17 +93,8 @@ architecture arch of A6532 is
 
     signal ram_d_out: std_logic_vector(7 downto 0);
     signal ram_r: std_logic;
-    signal ph2_d: std_logic;
-    signal ph2_rise: std_logic;
 
 begin
-    ph2_rise <= '1' when ph2_d = '0' and ph2 = '1' else '0';
-
-    process(clk) begin
-        if rising_edge(clk) then
-            ph2_d <= ph2;
-        end if;
-    end process;
 
     io: for i in 0 to 7 generate
         -- TEMPORARY FIX
@@ -128,7 +117,7 @@ begin
     irq <= not ((timer_intr and timer_irq_en) or (edge_intr and edge_irq_en));
     edge_intr <= edge_intr_lo when edge_pol = '0' else edge_intr_hi;
 
-    process(clk, ph2_rise, cs, r, rs, a, ram_d_out, pa_in, pa_ddr, pb_in, pb_ddr, timer, timer_intr, edge_intr)
+    process(cs, r, rs, a, ram_d_out, pa_in, pa_ddr, pb_in, pb_ddr, timer, timer_intr, edge_intr)
     begin
         if r = '1' then
             if (cs = '0') then
@@ -157,8 +146,13 @@ begin
             end if;
         else
             d <= "ZZZZZZZZ";
-            if (clk'event and clk = '1' and cs = '1' and ph2_rise = '1') then
-                if (rs = '1') then
+        end if;
+    end process;
+
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            if (cs = '1' and rs = '1') then
                     if a(2) = '0' then
                         case a(1 downto 0) is
                             when "01" =>
@@ -174,7 +168,6 @@ begin
                         edge_pol <= a(0);
                         edge_irq_en <= a(1);
                     end if;
-                end if;
             end if;
         end if;
     end process;
@@ -201,9 +194,9 @@ begin
         timer_dvdr(10) when "11",
         '-' when others;
 
-    process(clk, ph2_rise)
+    process(clk)
     begin
-        if (clk'event and clk = '1' and ph2_rise = '1') then
+        if rising_edge(clk) then
             if (timer_inc = '1') then
                 timer_dvdr <= "00000000001";
             else
@@ -226,7 +219,7 @@ begin
             elsif (timer_read = '1' or timer_write = '1') then
                 timer_intr <= '0';
             end if;
-        end if;
+       end if;
     end process;
 
 end arch;

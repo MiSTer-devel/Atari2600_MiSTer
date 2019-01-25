@@ -277,7 +277,6 @@ A2601top A2601top
 (
 	.reset(reset),
 	.clk(clk_cpu),
-	.clk_vid(clk_sys),
 
 	.audio(audio),
 

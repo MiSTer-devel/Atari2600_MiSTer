@@ -36,7 +36,6 @@ entity A2601top is
    port (
 		reset     : in std_logic;
 		clk       : in std_logic;
-		clk_vid   : in std_logic;
 
 		audio     : out std_logic_vector(4 downto 0);
 
@@ -104,7 +103,6 @@ architecture arch of A2601top is
 	signal sys_clk_dvdr: unsigned(4 downto 0) := "00000";
 
 	signal ph0: std_logic;
-	signal ph0d: std_logic;
 
 	signal rgbx2: std_logic_vector(23 downto 0);
 	signal hsyn: std_logic;
@@ -183,7 +181,6 @@ begin
 
 ms_A2601: work.A2601
 port map(
-	clk_vid     => clk_vid,
 	clk         => clk,
 	rst         => rst,
 	d           => cpu_d,
@@ -321,170 +318,167 @@ rom_a <=
 		"0000" & cpu_a(10 downto 0) when bss = BANK2K else
 		bank(2 downto 0) & cpu_a(11 downto 0);
 
-process(clk)
+process(ph0)
 	variable w_index_v :integer; 
 	variable addr_v :std_logic_vector(12 downto 0); 
 begin
-	if falling_edge(clk) then
-		ph0d <= ph0;
-		if ph0d = '0' and ph0 = '1' then
-			if (rst = '1') then
-				bank <= "0000";
-				e0_bank0 <= "000";
-				e0_bank1 <= "000";
-				e0_bank2 <= "000";
-			else
-				case bss is
-					when BANKFA =>
-						if (cpu_a = "1" & X"FF8") then
-							bank <= "0000";
-						elsif (cpu_a = "1" & X"FF9") then
-							bank <= "0001";
-						elsif (cpu_a = "1" & X"FFA") then
-							bank <= "0010";
-						end if;
-					when BANKF8 =>
-						if (cpu_a = "1" & X"FF8") then
-							bank <= "0000";
-						elsif (cpu_a = "1" & X"FF9") then
-							bank <= "0001";
-						end if;
-					when BANKF6 =>
-						if (cpu_a = "1" & X"FF6") then
-							bank <= "0000";
-						elsif (cpu_a = "1" & X"FF7") then
-							bank <= "0001";
-						elsif (cpu_a = "1" & X"FF8") then
-							bank <= "0010";
-						elsif (cpu_a = "1" & X"FF9") then
-							bank <= "0011";
-						end if;
-					when BANKF4 =>
-						if (cpu_a = "1" & X"FF4") then
-							bank <= "0000";
-						elsif (cpu_a = "1" & X"FF5") then
-							bank <= "0001";
-						elsif (cpu_a = "1" & X"FF6") then
-							bank <= "0010";
-						elsif (cpu_a = "1" & X"FF7") then
-							bank <= "0011";
-						elsif (cpu_a = "1" & X"FF8") then
-							bank <= "0100";
-						elsif (cpu_a = "1" & X"FF9") then
-							bank <= "0101";
-						elsif (cpu_a = "1" & X"FFA") then
-							bank <= "0110";
-						elsif (cpu_a = "1" & X"FFB") then
-							bank <= "0111";
-						end if;
-					when BANKP2 => -- DPC - included by Victor Trucco - 25/05/2018
-						if cpu_a /= addr_v then -- single execution for each cpu address
-							addr_v := cpu_a;
+	if rising_edge(ph0) then
+		if (rst = '1') then
+			bank <= "0000";
+			e0_bank0 <= "000";
+			e0_bank1 <= "000";
+			e0_bank2 <= "000";
+		else
+			case bss is
+				when BANKFA =>
+					if (cpu_a = "1" & X"FF8") then
+						bank <= "0000";
+					elsif (cpu_a = "1" & X"FF9") then
+						bank <= "0001";
+					elsif (cpu_a = "1" & X"FFA") then
+						bank <= "0010";
+					end if;
+				when BANKF8 =>
+					if (cpu_a = "1" & X"FF8") then
+						bank <= "0000";
+					elsif (cpu_a = "1" & X"FF9") then
+						bank <= "0001";
+					end if;
+				when BANKF6 =>
+					if (cpu_a = "1" & X"FF6") then
+						bank <= "0000";
+					elsif (cpu_a = "1" & X"FF7") then
+						bank <= "0001";
+					elsif (cpu_a = "1" & X"FF8") then
+						bank <= "0010";
+					elsif (cpu_a = "1" & X"FF9") then
+						bank <= "0011";
+					end if;
+				when BANKF4 =>
+					if (cpu_a = "1" & X"FF4") then
+						bank <= "0000";
+					elsif (cpu_a = "1" & X"FF5") then
+						bank <= "0001";
+					elsif (cpu_a = "1" & X"FF6") then
+						bank <= "0010";
+					elsif (cpu_a = "1" & X"FF7") then
+						bank <= "0011";
+					elsif (cpu_a = "1" & X"FF8") then
+						bank <= "0100";
+					elsif (cpu_a = "1" & X"FF9") then
+						bank <= "0101";
+					elsif (cpu_a = "1" & X"FFA") then
+						bank <= "0110";
+					elsif (cpu_a = "1" & X"FFB") then
+						bank <= "0111";
+					end if;
+				when BANKP2 => -- DPC - included by Victor Trucco - 25/05/2018
+					if cpu_a /= addr_v then -- single execution for each cpu address
+						addr_v := cpu_a;
 
-							if (cpu_a(12) = '1' ) then -- A12 - HIGH
-								w_index_v := to_integer(unsigned(cpu_a(2 downto 0)));
-								if (cpu_a(12 downto 6) = "1000000") then -- DPC READ - 0x1000 to 0x103F (1 0000 0000 0000 to 1 0000 0011 1111)
-									-- Update flag register for selected data fetcher
-									if (DpcCounters(w_index_v)(7 downto 0) = DpcTops(w_index_v)) then
-										DpcFlags(w_index_v) <= x"ff";
-									elsif (DpcCounters(w_index_v)(7 downto 0) = DpcBottoms(w_index_v)) then
+						if (cpu_a(12) = '1' ) then -- A12 - HIGH
+							w_index_v := to_integer(unsigned(cpu_a(2 downto 0)));
+							if (cpu_a(12 downto 6) = "1000000") then -- DPC READ - 0x1000 to 0x103F (1 0000 0000 0000 to 1 0000 0011 1111)
+								-- Update flag register for selected data fetcher
+								if (DpcCounters(w_index_v)(7 downto 0) = DpcTops(w_index_v)) then
+									DpcFlags(w_index_v) <= x"ff";
+								elsif (DpcCounters(w_index_v)(7 downto 0) = DpcBottoms(w_index_v)) then
+									DpcFlags(w_index_v) <= x"00";
+								end if;
+
+								case cpu_a(5 downto 3)  is
+									when "000" =>  -- 0x1000 to 0x1007 - random number and music fetcher
+										if(cpu_a(2) = '0') then -- 0x1000 to 0x1003
+											-- random number read
+											DpcRandom <= DpcRandom(6 downto 0) & (not(DpcRandom(7) xor DpcRandom(5) xor DpcRandom(4) xor DpcRandom(3)));
+											--resultDPC <= DpcRandom;
+										--	else -- 0x1004 to 0x1007
+											-- sound
+											--ampI_v := "000";
+											--
+											--masked0_v := DpcMusicModes(0) and DpcMusicFlags(0);
+											--if (masked0_v /= x"00") then ampI_v(0) := '1'; end if;
+											--
+											--masked1_v := DpcMusicModes(1) and DpcMusicFlags(1);
+											--if (masked1_v /= x"00") then ampI_v(1) := '1'; end if;
+											--
+											--masked2_v := DpcMusicModes(2) and DpcMusicFlags(2);
+											--if (masked2_v /= x"00") then ampI_v(2) := '1'; end if;
+											--
+											--resultDPC <= soundAmplitudes(to_integer(unsigned(ampI_v)));
+										end if;
+									--when "001" =>  -- 0x1008 to 0x100f - Graphics read
+										--DpcDisplayPtr <= "100" & std_logic_vector(2047 - DpcCounters(w_index_v)(10 downto 0));
+									--when "010" =>  -- 0x1010 to 0x1017 - Graphics read (ANDed with flag)
+										--DpcDisplayPtr <= "100" & std_logic_vector(2047 - DpcCounters(w_index_v)(10 downto 0));-- and DpcFlags(w_index_v));
+									--when "111" =>  -- 0x1038 to 0x103f - Return the current flag value
+										--resultDPC <= DpcFlags(w_index_v);
+									when others => NULL;
+								end case;
+
+								-- Clock the selected data fetcher's counter if needed
+								if (w_index_v < 5 or (w_index_v >= 5 and DpcMusicModes(5 - w_index_v)(4) = '1')) then
+									DpcCounters(w_index_v) <= DpcCounters(w_index_v) - 1;
+								end if;
+							elsif (cpu_a(12 downto 6) = "1000001") then -- DPC WRITE - 0x1040 to 0x107F (1 0000 0100 0000 to 1 0000 0111 1111)
+								case cpu_a(5 downto 3)  is
+									when "000" => --0x1040 to 0x1047
+										-- DFx top count
+										DpcTops(w_index_v) <= cpu_d;
 										DpcFlags(w_index_v) <= x"00";
-									end if;
-
-									case cpu_a(5 downto 3)  is
-										when "000" =>  -- 0x1000 to 0x1007 - random number and music fetcher
-											if(cpu_a(2) = '0') then -- 0x1000 to 0x1003
-												-- random number read
-												DpcRandom <= DpcRandom(6 downto 0) & (not(DpcRandom(7) xor DpcRandom(5) xor DpcRandom(4) xor DpcRandom(3)));
-												--resultDPC <= DpcRandom;
-											--	else -- 0x1004 to 0x1007
-												-- sound
-												--ampI_v := "000";
-												--
-												--masked0_v := DpcMusicModes(0) and DpcMusicFlags(0);
-												--if (masked0_v /= x"00") then ampI_v(0) := '1'; end if;
-												--
-												--masked1_v := DpcMusicModes(1) and DpcMusicFlags(1);
-												--if (masked1_v /= x"00") then ampI_v(1) := '1'; end if;
-												--
-												--masked2_v := DpcMusicModes(2) and DpcMusicFlags(2);
-												--if (masked2_v /= x"00") then ampI_v(2) := '1'; end if;
-												--
-												--resultDPC <= soundAmplitudes(to_integer(unsigned(ampI_v)));
-											end if;
-										--when "001" =>  -- 0x1008 to 0x100f - Graphics read
-											--DpcDisplayPtr <= "100" & std_logic_vector(2047 - DpcCounters(w_index_v)(10 downto 0));
-										--when "010" =>  -- 0x1010 to 0x1017 - Graphics read (ANDed with flag)
-											--DpcDisplayPtr <= "100" & std_logic_vector(2047 - DpcCounters(w_index_v)(10 downto 0));-- and DpcFlags(w_index_v));
-										--when "111" =>  -- 0x1038 to 0x103f - Return the current flag value
-											--resultDPC <= DpcFlags(w_index_v);
-										when others => NULL;
-									end case;
-
-									-- Clock the selected data fetcher's counter if needed
-									if (w_index_v < 5 or (w_index_v >= 5 and DpcMusicModes(5 - w_index_v)(4) = '1')) then
-										DpcCounters(w_index_v) <= DpcCounters(w_index_v) - 1;
-									end if;
-								elsif (cpu_a(12 downto 6) = "1000001") then -- DPC WRITE - 0x1040 to 0x107F (1 0000 0100 0000 to 1 0000 0111 1111)
-									case cpu_a(5 downto 3)  is
-										when "000" => --0x1040 to 0x1047
-											-- DFx top count
-											DpcTops(w_index_v) <= cpu_d;
-											DpcFlags(w_index_v) <= x"00";
-										when "001" => -- 0x1048 to 0x104F
-											-- DFx bottom count
-											DpcBottoms(w_index_v) <= cpu_d;
-										when "010" => -- 0x1050 to 0x1057
-											-- DFx counter low
-											DpcCounters(w_index_v)(7 downto 0) <= cpu_d;
-										when "011" => -- 0x1058 to 105F
-											-- DFx counter high
-											DpcCounters(w_index_v)(10 downto 8) <= cpu_d(2 downto 0);
-											if(w_index_v >= 5) then -- 0x105D to 0x105F
-												DpcMusicModes(5 - w_index_v) <= "000" & cpu_d(4) & "0000"; -- Music On or Off
-											end if;
-										when "110" => -- 0x1070 to 0x1077
-											DpcRandom <= x"01";
-										when others => NULL;
-									end case;
-								else
-									-- bank switch F8 style
-									if (cpu_a = "1" & X"FF8") then
-										bank <= "0000";
-									elsif (cpu_a = "1" & X"FF9") then
-										bank <= "0001";
-									end if;
+									when "001" => -- 0x1048 to 0x104F
+										-- DFx bottom count
+										DpcBottoms(w_index_v) <= cpu_d;
+									when "010" => -- 0x1050 to 0x1057
+										-- DFx counter low
+										DpcCounters(w_index_v)(7 downto 0) <= cpu_d;
+									when "011" => -- 0x1058 to 105F
+										-- DFx counter high
+										DpcCounters(w_index_v)(10 downto 8) <= cpu_d(2 downto 0);
+										if(w_index_v >= 5) then -- 0x105D to 0x105F
+											DpcMusicModes(5 - w_index_v) <= "000" & cpu_d(4) & "0000"; -- Music On or Off
+										end if;
+									when "110" => -- 0x1070 to 0x1077
+										DpcRandom <= x"01";
+									when others => NULL;
+								end case;
+							else
+								-- bank switch F8 style
+								if (cpu_a = "1" & X"FF8") then
+									bank <= "0000";
+								elsif (cpu_a = "1" & X"FF9") then
+									bank <= "0001";
 								end if;
 							end if;
 						end if;
-					when BANKFE => -- BANK FE fixed by Victor Trucco - 24/05/2018
-						-- If was latched, check the 5th bit of the data bus for the bank-switch
-						if FE_latch = '1' then
-							bank <= "000"& not cpu_d(5);
-						end if;
+					end if;
+				when BANKFE => -- BANK FE fixed by Victor Trucco - 24/05/2018
+					-- If was latched, check the 5th bit of the data bus for the bank-switch
+					if FE_latch = '1' then
+						bank <= "000"& not cpu_d(5);
+					end if;
 
-						-- Access at 0x01fe trigger the latch, but on the next cpu cycle
-						if (cpu_a(12 downto 0) = "0000111111110" ) then -- 0x01FE
-							FE_latch <= '1';
-						else
-							FE_latch <= '0';
-						end if;
-					when BANKE0 =>
-						if (cpu_a(12 downto 4) = "1" & X"FE" and cpu_a(3) = '0') then
-							e0_bank0 <= cpu_a(2 downto 0);
-						elsif (cpu_a(12 downto 4) = "1" & X"FE" and cpu_a(3) = '1') then
-							e0_bank1 <= cpu_a(2 downto 0);
-						elsif (cpu_a(12 downto 4) = "1" & X"FF" and cpu_a(3) = '0') then
-							e0_bank2 <= cpu_a(2 downto 0);
-						end if;
-					when BANK3F =>
-						if (cpu_a = "0" & X"03F") then
-							bank(1 downto 0) <= cpu_d(1 downto 0);
-						end if;
-					when others =>
-						null;
-				end case;
-			end if;
+					-- Access at 0x01fe trigger the latch, but on the next cpu cycle
+					if (cpu_a(12 downto 0) = "0000111111110" ) then -- 0x01FE
+						FE_latch <= '1';
+					else
+						FE_latch <= '0';
+					end if;
+				when BANKE0 =>
+					if (cpu_a(12 downto 4) = "1" & X"FE" and cpu_a(3) = '0') then
+						e0_bank0 <= cpu_a(2 downto 0);
+					elsif (cpu_a(12 downto 4) = "1" & X"FE" and cpu_a(3) = '1') then
+						e0_bank1 <= cpu_a(2 downto 0);
+					elsif (cpu_a(12 downto 4) = "1" & X"FF" and cpu_a(3) = '0') then
+						e0_bank2 <= cpu_a(2 downto 0);
+					end if;
+				when BANK3F =>
+					if (cpu_a = "0" & X"03F") then
+						bank(1 downto 0) <= cpu_d(1 downto 0);
+					end if;
+				when others =>
+					null;
+			end case;
 		end if;
 	end if;
 end process;
