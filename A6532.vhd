@@ -189,12 +189,14 @@ begin
 		  timer_dvdr(10) when "11",
 		  '-' when others;
 
-	process(clk,res)
+	process(clk, res)
 	begin
 		if res = '1' then
 			timer <= x"00";
-			timer_intvl <= "00";
+			timer_intr <= '0';
+			timer_intvl <= "11";
 			timer_irq_en <= '0';
+			timer_dvdr <= "00000000001";
 		elsif rising_edge(clk) then
 			if (timer_inc = '1') then
 				timer_dvdr <= "00000000001";
