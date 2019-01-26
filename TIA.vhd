@@ -396,45 +396,46 @@ begin
             
 end arch;
 
--- XYZ
 library ieee;
-use ieee.std_logic_1164.all;       
-use ieee.numeric_std.all;
+use ieee.std_logic_1164.ALL;
+use ieee.std_logic_arith.ALL;
+use ieee.std_logic_unsigned.ALL; 
 
 entity paddle is
-   port(clk: in std_logic;
-        hsync: in std_logic;
-        value: in std_logic_vector(7 downto 0);
-        rst: in std_logic;       
-        o: out std_logic
-     );
+port(
+	clk   : in std_logic;
+	hsync : in std_logic;
+	inp   : in std_logic_vector(7 downto 0);
+	rst   : in std_logic;       
+	o     : out std_logic
+);
 end paddle;
 
 architecture arch of paddle is
 	signal hsync_d: std_logic;
+	signal uinp   : std_logic_vector(7 downto 0);
 begin
-    process(clk)
-        variable cnt: integer range 0 to 190;
-    begin
-        if rising_edge(clk) then
-            hsync_d <= hsync;
-            if( rst = '1' ) then
-                -- map -128..127 -> 190..0
-                cnt := to_integer(96 + signed(value)/2 + signed(value)/4);
-            elsif (hsync_d = '0' and hsync = '1') then
-                if(cnt /= 190) then
-                    cnt := cnt + 1;
-                end if;
-            end if;
-        end if;
+	uinp <= not inp(7) & inp(6 downto 0);
 
-        -- return 1 if counter has "discharged"
-        if(cnt = 190) then
-            o <= '1';
-        else
-            o <= '0';
-        end if;
-    end process;
+	process(clk)
+		variable cnt: std_logic_vector(7 downto 0);
+	begin
+		if rising_edge(clk) then
+			hsync_d <= hsync;
+			if rst = '1' then
+				cnt := ('0'&uinp(7 downto 1)) + ("00000"&uinp(7 downto 5));
+			elsif (hsync_d = '0' and hsync = '1' and cnt < 255) then
+				cnt := cnt + 1;
+			end if;
+		end if;
+
+		-- return 1 if counter has "discharged"
+		if(cnt >= 196) then
+			o <= '1';
+		else
+			o <= '0';
+		end if;
+	end process;
 end arch;
 
 library ieee;
@@ -778,7 +779,7 @@ begin
     process(clk)
     begin
         if rising_edge(clk) then
-            if (h_lfsr_out = "010100") and (hh1_edge = '1') then
+            if (h_lfsr_out = "101001") and (hh1_edge = '1') then
                 hmove <= '0';
             elsif (hmove_set = '1') then
                 hmove <= '1';
@@ -1082,7 +1083,7 @@ begin
     begin
 
         if rising_edge(clk) then
-            if (hh1_edge = '1') then
+            if (hh0 = '1') then
                 if (sec = '1') then
                     hmove_cntr <= hmove_cntr + 1;
                 end if;

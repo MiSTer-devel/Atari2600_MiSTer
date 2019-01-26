@@ -47,11 +47,11 @@ entity A2601top is
 		O_VIDEO_G : out std_logic_vector(7 downto 0);
 		O_VIDEO_B : out std_logic_vector(7 downto 0);			
 
-		p_l       : in std_logic;
-		p_r       : in std_logic;
-		p_u       : in std_logic;
-		p_d       : in std_logic;
-		p_f       : in std_logic;
+		p1_l      : in std_logic;
+		p1_r      : in std_logic;
+		p1_u      : in std_logic;
+		p1_d      : in std_logic;
+		p1_f      : in std_logic;
 
 		p2_l      : in std_logic;
 		p2_r      : in std_logic;
@@ -59,15 +59,19 @@ entity A2601top is
 		p2_d      : in std_logic;
 		p2_f      : in std_logic;
 
-		p_a       : in std_logic;
-		p_b       : in std_logic;
-		paddle_0  : in std_logic_vector(7 downto 0);
+		p_1       : in std_logic;
 		paddle_1  : in std_logic_vector(7 downto 0);
-		
-		p2_a      : in std_logic;
-		p2_b      : in std_logic;
+
+		p_2       : in std_logic;
 		paddle_2  : in std_logic_vector(7 downto 0);
+
+		p_3       : in std_logic;
 		paddle_3  : in std_logic_vector(7 downto 0);
+
+		p_4       : in std_logic;
+		paddle_4  : in std_logic_vector(7 downto 0);
+		
+		p_type    : in std_logic_vector(1 downto 0);
 
 		p_start   : in std_logic;
 		p_select  : in std_logic;
@@ -147,8 +151,8 @@ architecture arch of A2601top is
 
 	signal bss:  bss_type := BANK00; 	--bank switching method
 	 
-	signal paddle_ena1 : std_logic := '0';
-	signal paddle_ena2 : std_logic := '0';
+	signal paddle_ena12 : std_logic := '0';
+	signal paddle_ena34 : std_logic := '0';
 
 	--- DPC signals
 	type B3_type is array(2 downto 0) of std_logic_vector(7 downto 0);
@@ -189,12 +193,12 @@ port map(
 	a           => cpu_a,
 	pa          => pa,
 	pb          => pb,
-	paddle_0    => paddle_0,
-	paddle_1    => paddle_1,
-	paddle_ena1 => paddle_ena1,
-	paddle_2    => paddle_2,
-	paddle_3    => paddle_3,
-	paddle_ena2 => paddle_ena2,
+	paddle_0    => paddle_1,
+	paddle_1    => paddle_2,
+	paddle_ena1 => paddle_ena12,
+	paddle_2    => paddle_3,
+	paddle_3    => paddle_4,
+	paddle_ena2 => paddle_ena34,
 	inpt4       => inpt4,
 	inpt5       => inpt5,
 	colu        => open,
@@ -221,13 +225,17 @@ rst <= reset when rising_edge(clk);
 
 process(clk) begin
 	if rising_edge(clk) then
-		if p_f = '0'  then paddle_ena1 <= '0'; end if;
-		if p_a = '0'  or p_b = '0'  then paddle_ena1 <= '1'; end if;
-		if p2_f = '0' then paddle_ena2 <= '0'; end if;
-		if p2_a = '0' or p2_b = '0' then paddle_ena2 <= '1'; end if;
+		if p_type /= "10" then
+			paddle_ena12 <= p_type(0);
+			paddle_ena34 <= p_type(0);
+		else
+			if p1_f = '0' then paddle_ena12 <= '0'; end if;
+			if p_1 = '0'  then paddle_ena12 <= '1'; end if;
+			paddle_ena34 <= '0';
+		end if;
 	end if;
 end process;
-    
+
 pb(3) <= p_color;  --b/w / colour
 pb(6) <= p_dif(0); -- p1/left difficulty
 pb(7) <= p_dif(1); -- p2/right difficulty
@@ -237,11 +245,11 @@ pb(2) <= '1'; --nc
 pb(1) <= p_select; 
 pb(0) <= p_start;
 
-pa(7 downto 4) <= p_r & p_l & p_d & p_u     when paddle_ena1 = '0' else p_a & p_b & "11";
-pa(3 downto 0) <= p2_r & p2_l & p2_d & p2_u when paddle_ena2 = '0' else p2_a & p2_b & "11";
+pa(7 downto 4) <= p1_r & p1_l & p1_d & p1_u when paddle_ena12 = '0' else p_1 & p_2 & "11";
+pa(3 downto 0) <= p2_r & p2_l & p2_d & p2_u when paddle_ena34 = '0' else p_3 & p_4 & "11";
 
-inpt4 <= p_f  or paddle_ena1;
-inpt5 <= p2_f or paddle_ena2;
+inpt4 <= p1_f or paddle_ena12;
+inpt5 <= p2_f or paddle_ena34;
 
 auv0 <= ("0" & unsigned(av0)) when (au0 = '1') else "00000";
 auv1 <= ("0" & unsigned(av1)) when (au1 = '1') else "00000";

@@ -8,11 +8,11 @@
 
 ## Usage notes
 
-### Differences from original version
-* Joystick/Paddle mode switched by joystick. Press **Paddle1/2** to switch to paddle mode (analog X/Y). Press **Fire** to switch to joystick mode (digital X/Y).
-* Keyboard always acts as a joystick. You need to define the keys in joystick menu.
-* Video aspect ratio switch in settings menu
-* Mouse emulates analog paddles.
+### Input devices
+* Gamepad can be used as joystick and paddle. In Auto(single) mode joystick mode is activated by Fire button. Paddle mode is activated by Paddle1 button.
+Auto mode is suitable for single play. For multiplay switch the mode in OSD to explicit Joystick or Paddle according to the game.
+* Mouse can be used as Paddle.
+
 
 ### Supported mappers
 * Auto detected: F8, FA, F6, F4, FA
@@ -21,7 +21,11 @@
 * Any mapper can be forced through file extension. Supported extensions: F8, F6, FE, E0, 3F, F4, P2, FA, CV
 
 
-### Original readme
+## Download precompiled binaries
+Go to [releases](https://github.com/MiSTer-devel/Atari2600_MiSTer/tree/master/releases) folder.
+
+
+## Original readme
 A2601 An FPGA-based clone of the Atari 2600 video game console (Release 0.1.0)
 
 This archive contains source code for VHDL implementation and Python script utilities for the A2601 video game console project.
@@ -40,5 +44,3 @@ All source code and other content found in this archive is subject to GNU Genera
 
 Copyright 2006, 2007, 2010 Retromaster.
 
-## Download precompiled binaries
-Go to [releases](https://github.com/MiSTer-devel/Atari2600_MiSTer/tree/master/releases) folder.

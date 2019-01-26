@@ -136,8 +136,10 @@ localparam CONF_STR = {
 	"O3,Difficulty P1,A,B;",
 	"O4,Difficulty P2,A,B;",
 	"-;",
+	"OBC,Control,Joystick,Paddle,Auto(Single);",
+	"ODE,Paddle map,X1+X2 X3+X4,X1+X3 X2+X4,X1+Y1 X2+Y2;",
 	"R0,Reset;",
-	"J1,Fire,Paddle1,Paddle2,Start,Select;",
+	"J1,Fire,Paddle1(x),Paddle2(y),Start,Select;",
 	"V,v",`BUILD_DATE
 };
 
@@ -168,10 +170,8 @@ wire reset = RESET | status[0] | buttons[1] | ioctl_download;
 
 
 //////////////////   HPS I/O   ///////////////////
-wire [15:0] joy_0;
-wire [15:0] joy_1;
-wire [15:0] joya_0;
-wire [15:0] joya_1;
+wire [15:0] joy_0,joy_1,joy_2,joy_3;
+wire [15:0] joya_0,joya_1,joya_2,joya_3;
 wire  [1:0] buttons;
 wire [31:0] status;
 wire [24:0] ps2_mouse;
@@ -194,8 +194,12 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.joystick_0(joy_0),
 	.joystick_1(joy_1),
+	.joystick_2(joy_2),
+	.joystick_3(joy_3),
 	.joystick_analog_0(joya_0),
 	.joystick_analog_1(joya_1),
+	.joystick_analog_2(joya_2),
+	.joystick_analog_3(joya_3),
 
 	.buttons(buttons),
 	.status(status),
@@ -282,11 +286,11 @@ A2601top A2601top
 	.O_VIDEO_G(G),
 	.O_VIDEO_B(B),
 
-	.p_r(~joy_0[0]),
-	.p_l(~joy_0[1]),
-	.p_d(~joy_0[2]),
-	.p_u(~joy_0[3]),
-	.p_f(~joy_0[4]),
+	.p1_r(~joy_0[0]),
+	.p1_l(~joy_0[1]),
+	.p1_d(~joy_0[2]),
+	.p1_u(~joy_0[3]),
+	.p1_f(~joy_0[4]),
 
 	.p2_r(~joy_1[0]),
 	.p2_l(~joy_1[1]),
@@ -294,18 +298,23 @@ A2601top A2601top
 	.p2_u(~joy_1[3]),
 	.p2_f(~joy_1[4]),
 
-	.p_a(~j0[5]),
-	.p_b(~j0[6]),
-	.paddle_0(ax),
-	.paddle_1(ay),
+	.p_1(status[14] ? ~j0[5] : ~|j0[6:5]),
+	.paddle_1(ax),
 
-	.p2_a(~joy_1[5]),
-	.p2_b(~joy_1[6]),
-	.paddle_2(joya_1[7:0]),
-	.paddle_3(joya_1[15:8]),
+	.p_2(status[14] ? ~j0[6] : status[13] ? ~|joy_2[6:5] : ~|joy_1[6:5]),
+	.paddle_2(status[14] ? ay : status[13] ? joya_2[7:0] : joya_1[7:0]),
 
-	.p_start( ~(joy_0[7] | joy_1[7])),
-	.p_select(~(joy_0[8] | joy_1[8])),
+	.p_3(status[14] ? ~joy_1[5] : status[13] ? ~|joy_1[6:5] : ~|joy_2[6:5]),
+	.paddle_3(status[14] ? joya_1[7:0] : status[13] ? joya_1[7:0] : joya_2[7:0]),
+
+	.p_4(status[14] ? ~joy_1[6] : ~|joy_3[6:5]),
+	.paddle_4(status[14] ? joya_1[15:8] : joya_3[7:0]),
+
+	.p_start (~(j0[7] | joy_1[7] | joy_2[7] | joy_3[7])),
+	.p_select(~(j0[8] | joy_1[8] | joy_2[8] | joy_3[8])),
+	
+	.p_type(status[12:11]),
+
 	.p_color(~status[2]),
 
 	.sc(sc),
@@ -363,7 +372,7 @@ video_mixer #(.LINE_LENGTH(250)) video_mixer
 reg        emu = 0;
 wire [7:0] ax = emu ? mx[7:0] : joya_0[7:0];
 wire [7:0] ay = emu ? my[7:0] : joya_0[15:8];
-wire [7:0] j0 = emu ? {joy_0[7], ps2_mouse[1:0], joy_0[4:0]} : joy_0[7:0];
+wire [8:0] j0 = emu ? {1'b0, ps2_mouse[2:0], joy_0[4:0]} : joy_0[8:0];
 
 reg  signed [8:0] mx = 0;
 wire signed [8:0] mdx = {ps2_mouse[4],ps2_mouse[4],ps2_mouse[15:9]};
