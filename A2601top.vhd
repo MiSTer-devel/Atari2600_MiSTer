@@ -230,8 +230,9 @@ process(clk) begin
 			paddle_ena34 <= p_type(0);
 		else
 			if p1_f = '0' then paddle_ena12 <= '0'; end if;
-			if p_1 = '0'  then paddle_ena12 <= '1'; end if;
-			paddle_ena34 <= '0';
+			if p_1 = '0' or p_2 = '0' then paddle_ena12 <= '1'; end if;
+			if p2_f = '0' then paddle_ena34 <= '0'; end if;
+			if p_3 = '0' or p_4 = '0' then paddle_ena34 <= '1'; end if;
 		end if;
 	end if;
 end process;

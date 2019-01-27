@@ -124,7 +124,6 @@ assign VIDEO_ARY = status[8] ? 8'd9  : 8'd3;
 `include "build_id.v" 
 localparam CONF_STR = {
 	"ATARI2600;;",
-	"-;",
 	"F,*;",
 	"O9A,SuperChip,Auto,Disable,Enable;",
 	"-;",
@@ -137,7 +136,8 @@ localparam CONF_STR = {
 	"O4,Difficulty P2,B,A;",
 	"-;",
 	"OBC,Control,Joystick,Paddle,Auto(Single);",
-	"ODE,Paddle map,X1+X2 X3+X4,X1+X3 X2+X4,X1+Y1 X2+Y2;",
+	"ODE,Paddle map,X1+X2 X3+X4,X1+X3 X2+X4,X1+Y1 X2+Y2,X1-Y1 X2-Y2;",
+	"OF,Paddle swap,No,Yes;",
 	"R0,Reset;",
 	"J1,Fire,Paddle1(x),Paddle2(y),Start,Select;",
 	"V,v",`BUILD_DATE
@@ -271,6 +271,16 @@ assign AUDIO_L = AUDIO_R;
 assign AUDIO_S = 0;
 assign AUDIO_MIX = 0;
 
+wire p_1 = status[14] ? ~j0[5] : ~|j0[6:5];
+wire p_2 = status[14] ? ~j0[6] : status[13] ? ~|joy_2[6:5] : ~|joy_1[6:5];
+wire p_3 = status[14] ? ~joy_1[5] : status[13] ? ~|joy_1[6:5] : ~|joy_2[6:5];
+wire p_4 = status[14] ? ~joy_1[6] : ~|joy_3[6:5];
+
+wire [7:0] paddle_1 = ax;
+wire [7:0] paddle_2 = status[14] ? (status[13] ? ~ay : ay) : status[13] ? joya_2[7:0] : joya_1[7:0];
+wire [7:0] paddle_3 = status[14] ? joya_1[7:0] : status[13] ? joya_1[7:0] : joya_2[7:0];
+wire [7:0] paddle_4 = status[14] ? (status[13] ? ~joya_1[15:8] : joya_1[15:8]) : joya_3[7:0];
+
 A2601top A2601top
 (
 	.reset(reset),
@@ -298,17 +308,15 @@ A2601top A2601top
 	.p2_u(~joy_1[3]),
 	.p2_f(~joy_1[4]),
 
-	.p_1(status[14] ? ~j0[5] : ~|j0[6:5]),
-	.paddle_1(ax),
+	.p_1(status[15] ? p_2 : p_1),
+	.p_2(status[15] ? p_1 : p_2),
+	.p_3(status[15] ? p_4 : p_3),
+	.p_4(status[15] ? p_3 : p_4),
 
-	.p_2(status[14] ? ~j0[6] : status[13] ? ~|joy_2[6:5] : ~|joy_1[6:5]),
-	.paddle_2(status[14] ? ay : status[13] ? joya_2[7:0] : joya_1[7:0]),
-
-	.p_3(status[14] ? ~joy_1[5] : status[13] ? ~|joy_1[6:5] : ~|joy_2[6:5]),
-	.paddle_3(status[14] ? joya_1[7:0] : status[13] ? joya_1[7:0] : joya_2[7:0]),
-
-	.p_4(status[14] ? ~joy_1[6] : ~|joy_3[6:5]),
-	.paddle_4(status[14] ? joya_1[15:8] : joya_3[7:0]),
+	.paddle_1(status[15] ? paddle_2 : paddle_1),
+	.paddle_2(status[15] ? paddle_1 : paddle_2),
+	.paddle_3(status[15] ? paddle_4 : paddle_3),
+	.paddle_4(status[15] ? paddle_3 : paddle_4),
 
 	.p_start (~(j0[7] | joy_1[7] | joy_2[7] | joy_3[7])),
 	.p_select(~(j0[8] | joy_1[8] | joy_2[8] | joy_3[8])),

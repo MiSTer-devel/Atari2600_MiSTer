@@ -423,14 +423,14 @@ begin
 		if rising_edge(clk) then
 			hsync_d <= hsync;
 			if rst = '1' then
-				cnt := ('0'&uinp(7 downto 1)) + ("00000"&uinp(7 downto 5));
+				cnt := ('0'&uinp(7 downto 1)) + ("000"&uinp(7 downto 3));
 			elsif (hsync_d = '0' and hsync = '1' and cnt < 255) then
 				cnt := cnt + 1;
 			end if;
 		end if;
 
 		-- return 1 if counter has "discharged"
-		if(cnt >= 196) then
+		if cnt >= 200 then
 			o <= '1';
 		else
 			o <= '0';
