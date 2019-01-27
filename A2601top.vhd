@@ -261,9 +261,10 @@ ram: work.ramx8 generic map(10) port map(clk, sc_r, cpu_do, sc_d_out, sc_a);
 
 sc_r <= '0' when (cpu_a(12 downto 10) = "101" and bss = BANKCV) or
                  (cpu_a(12 downto  8) = "10000" and bss = BANKFA) or 
-                 (cpu_a(12 downto  7) = "100000" and sc = '1') else '1';
+                 (cpu_a(12 downto  7) = "100000" and sc = '1') or reset = '1' else '1';
 
-sc_a <=    cpu_a(9 downto 0) when bss = BANKCV else
+sc_a <= rom_size(9 downto 0) when rst = '1'    else  
+           cpu_a(9 downto 0) when bss = BANKCV else
     "00" & cpu_a(7 downto 0) when bss = BANKFA else
    "000" & cpu_a(6 downto 0);
 

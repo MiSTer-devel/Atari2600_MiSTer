@@ -41,7 +41,7 @@ architecture arch of A6507 is
 begin
 
 	ad <= std_logic_vector(ad_full(12 downto 0));
-	do <= std_logic_vector(cpuDo) when cpuWe = '1' else x"FF";
+	do <= x"00" when rst = '1' else std_logic_vector(cpuDo) when cpuWe = '1' else x"FF";
 	r <= not cpuWe;
 
 	cpu: entity work.cpu65xx

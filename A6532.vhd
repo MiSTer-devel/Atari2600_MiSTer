@@ -94,7 +94,9 @@ architecture arch of A6532 is
 	signal intr_read: std_logic;
 
 	signal ram_d_out: std_logic_vector(7 downto 0);
-	signal ram_r: std_logic;
+	signal ram_r : std_logic;
+	signal ram_a : std_logic_vector(6 downto 0);
+	signal clr_a : std_logic_vector(6 downto 0);
 
 begin
 	io: for i in 0 to 7 generate
@@ -102,9 +104,11 @@ begin
 		pb_in(i) <= pbi(i) when pb_ddr(i) = '0' else pb_reg(i);
 	end generate;
 
-	ram: work.ramx8 port map(clk, ram_r, di, ram_d_out, a);
+	ram: work.ramx8 port map(clk, ram_r, di, ram_d_out, ram_a);
 
-	ram_r <= (not rs and r) or rs or not cs;
+	ram_r <= ((not rs and r) or rs or not cs) and not res;
+	ram_a <= a when res = '0' else clr_a;
+	clr_a <= clr_a + 1 when rising_edge(clk);
 
 	timer_write <= (not r) and rs and a(2) and a(4) and cs;
 	timer_read <= r and rs and a(2) and (not a(0)) and cs;
