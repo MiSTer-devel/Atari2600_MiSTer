@@ -139,7 +139,7 @@ localparam CONF_STR = {
 	"ODE,Paddle map,X1+X2 X3+X4,X1+X3 X2+X4,X1+Y1 X2+Y2,X1-Y1 X2-Y2;",
 	"OF,Paddle swap,No,Yes;",
 	"R0,Reset;",
-	"J1,Fire,Paddle1(x),Paddle2(y),Start,Select;",
+	"J1,Fire,Paddle1(x),Paddle2(y),Game Reset,Game Select;",
 	"V,v",`BUILD_DATE
 };
 
