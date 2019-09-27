@@ -59,6 +59,11 @@ module emu
 	output  [1:0] LED_POWER,
 	output  [1:0] LED_DISK,
 
+	// I/O board button press simulation (active high)
+	// b[1]: user button
+	// b[0]: osd button
+	output  [1:0] BUTTONS,
+
 	output [15:0] AUDIO_L,
 	output [15:0] AUDIO_R,
 	output        AUDIO_S, // 1 - signed audio samples, 0 - unsigned
@@ -67,7 +72,7 @@ module emu
 	//ADC
 	inout   [3:0] ADC_BUS,
 
-	// SD-SPI
+	//SD-SPI
 	output        SD_SCK,
 	output        SD_MOSI,
 	input         SD_MISO,
@@ -110,10 +115,10 @@ module emu
 	// Open-drain User port.
 	// 0 - D+/RX
 	// 1 - D-/TX
-	// 2..5 - USR1..USR4
+	// 2..6 - USR2..USR6
 	// Set USER_OUT to 1 to read from USER_IN.
-	input   [5:0] USER_IN,
-	output  [5:0] USER_OUT,
+	input   [6:0] USER_IN,
+	output  [6:0] USER_OUT,
 
 	input         OSD_STATUS
 );
@@ -129,6 +134,7 @@ assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign LED_USER  = 0;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
+assign BUTTONS   = 0;
 
 assign VIDEO_ARX = status[8] ? 8'd16 : 8'd4;
 assign VIDEO_ARY = status[8] ? 8'd9  : 8'd3; 
@@ -167,14 +173,18 @@ pll pll
 	.rst(0),
 	.outclk_0(clk_sys),
 	.outclk_1(clk_cpu),
+	.outclk_2(CLK_VIDEO),
 	.locked(locked)
 );
 
+//assign CLK_VIDEO = clk_sys;
+
 reg ce_pix;
-always @(negedge clk_sys) begin
-	reg [2:0] div;
+always @(negedge CLK_VIDEO) begin
+	reg [4:0] div;
 
 	div <= div + 1'd1;
+	if(div == 23) div <= 0;
 	ce_pix <= !div;
 end
 
@@ -301,7 +311,7 @@ A2601top A2601top
 	.audio(audio),
 
 	//.O_VSYNC(VSync),
-	.O_HSYNC(HSync),
+	.O_HSYNC(hs),
 	.O_HBLANK(HBlank),
 	.O_VBLANK(VBlank),
 	.O_VIDEO_R(R),
@@ -348,19 +358,26 @@ A2601top A2601top
 );
 
 wire [7:0] R,G,B;
-wire HSync;
+wire hs;
+reg  HSync;
 wire HBlank, VBlank;
 reg VSync;
 
-always @(posedge clk_sys) begin
-	reg old_hs, old_vbl;
-	reg [7:0] vbl;
+always @(posedge CLK_VIDEO) begin
+	reg       old_vbl;
+	reg [2:0] vbl;
+	reg [7:0] vblcnt, vspos;
 	
-	old_hs <= HSync;
-	if(~old_hs & HSync) begin
+	HSync <= hs;
+	if(~HSync & hs) begin
 		old_vbl <= VBlank;
+		
+		if(VBlank) vblcnt <= vblcnt+1'd1;
+		if(~old_vbl & VBlank) vblcnt <= 0;
+		if(old_vbl & ~VBlank) vspos <= (vblcnt>>1) - 8'd10;
+
 		{VSync,vbl} <= {vbl,1'b0};
-		if(~old_vbl & VBlank) vbl <= 8'b00111100;
+		if(vblcnt == vspos) {VSync,vbl} <= '1;
 	end
 end
 
@@ -369,7 +386,6 @@ wire [2:0] sl = scale ? scale - 1'd1 : 3'd0;
 wire       scandoubler = scale || forced_scandoubler;
 
 assign VGA_F1 = 0;
-assign CLK_VIDEO = clk_sys;
 assign VGA_SL = sl[1:0];
 assign VGA_DE = de & ~(VGA_VS|VGA_HS);
 
@@ -378,6 +394,7 @@ wire de;
 video_mixer #(.LINE_LENGTH(250)) video_mixer
 (
 	.*,
+	.clk_sys(CLK_VIDEO),
 	.ce_pix(ce_pix),
 	.ce_pix_out(CE_PIXEL),
 
