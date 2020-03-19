@@ -936,7 +936,7 @@ begin
 
         if rising_edge(clk) then
 		if cs = '0' then
-                floating_bus <= do;
+                floating_bus <= di;
             end if;
 
             phi2_d <= phi2;
