@@ -718,6 +718,8 @@ architecture arch of TIA is
     signal inpt2: std_logic;
     signal inpt3: std_logic;
 
+    signal floating_bus: std_logic_vector(7 downto 0);
+
 begin
     paddle0: work.paddle port map(clk, hsync, paddle_0, inpt03_chg, inpt0);
     paddle1: work.paddle port map(clk, hsync, paddle_1, inpt03_chg, inpt1);
@@ -858,10 +860,10 @@ begin
 
     inpt45_rst <= '1' when (a = A_VBLANK) and (r = '0') and (cs = '1') else '0';
 
-    process(clk, a, di, r, cs, cx, inpt45_len, inpt0, inpt1, inpt2, inpt3, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2)
+    process(clk, a, di, r, cs, cx, inpt45_len, inpt0, inpt1, inpt2, inpt3, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2, floating_bus)
     begin
         if (r = '1') and (cs = '1') then
-            do(5 downto 0) <= "000000";
+            do(5 downto 0) <= floating_bus(5 downto 0);
 
             case a(3 downto 0) is
                 when A_CXM0P =>
@@ -933,6 +935,10 @@ begin
         end if;
 
         if rising_edge(clk) then
+		if cs = '0' then
+                floating_bus <= di;
+            end if;
+
             phi2_d <= phi2;
             if (r = '0') and (cs = '1') and (phi2_d = '0' and phi2 = '1') then
                 case a is

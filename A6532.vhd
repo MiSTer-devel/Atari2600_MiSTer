@@ -209,7 +209,7 @@ begin
 			end if;
 
 			if (timer_write = '1') then
-				timer <= di;
+				timer <= di - 1;
 				timer_intvl <= a(1 downto 0);
 				timer_irq_en <= a(3);
 				timer_dvdr <= "00000000001";
