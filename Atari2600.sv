@@ -362,6 +362,7 @@ reg VSync;
 
 always @(posedge clk_sys) begin
 	reg old_hs, old_vbl;
+	reg [7:0] vbl;
 	
 	old_hs <= HSync;
 	if(~old_hs & HSync) begin
