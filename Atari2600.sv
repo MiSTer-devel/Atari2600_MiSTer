@@ -173,18 +173,16 @@ pll pll
 	.rst(0),
 	.outclk_0(clk_sys),
 	.outclk_1(clk_cpu),
-	.outclk_2(CLK_VIDEO),
 	.locked(locked)
 );
 
 //assign CLK_VIDEO = clk_sys;
 
 reg ce_pix;
-always @(negedge CLK_VIDEO) begin
-	reg [4:0] div;
+always @(negedge clk_sys) begin
+	reg [2:0] div;
 
 	div <= div + 1'd1;
-	if(div == 23) div <= 0;
 	ce_pix <= !div;
 end
 
@@ -311,7 +309,7 @@ A2601top A2601top
 	.audio(audio),
 
 	//.O_VSYNC(VSync),
-	.O_HSYNC(hs),
+	.O_HSYNC(HSync),
 	.O_HBLANK(HBlank),
 	.O_VBLANK(VBlank),
 	.O_VIDEO_R(R),
@@ -358,26 +356,19 @@ A2601top A2601top
 );
 
 wire [7:0] R,G,B;
-wire hs;
-reg  HSync;
+wire HSync;
 wire HBlank, VBlank;
 reg VSync;
 
-always @(posedge CLK_VIDEO) begin
-	reg       old_vbl;
-	reg [2:0] vbl;
-	reg [7:0] vblcnt, vspos;
+always @(posedge clk_sys) begin
+	reg old_hs, old_vbl;
 	
-	HSync <= hs;
-	if(~HSync & hs) begin
+	old_hs <= HSync;
+	if(~old_hs & HSync) begin
 		old_vbl <= VBlank;
-		
-		if(VBlank) vblcnt <= vblcnt+1'd1;
-		if(~old_vbl & VBlank) vblcnt <= 0;
-		if(old_vbl & ~VBlank) vspos <= (vblcnt>>1) - 8'd10;
 
 		{VSync,vbl} <= {vbl,1'b0};
-		if(vblcnt == vspos) {VSync,vbl} <= '1;
+		if(~old_vbl & VBlank) vbl <= 8'b00111100;
 	end
 end
 
@@ -386,6 +377,7 @@ wire [2:0] sl = scale ? scale - 1'd1 : 3'd0;
 wire       scandoubler = scale || forced_scandoubler;
 
 assign VGA_F1 = 0;
+assign CLK_VIDEO = clk_sys;
 assign VGA_SL = sl[1:0];
 assign VGA_DE = de & ~(VGA_VS|VGA_HS);
 
@@ -394,7 +386,6 @@ wire de;
 video_mixer #(.LINE_LENGTH(250)) video_mixer
 (
 	.*,
-	.clk_sys(CLK_VIDEO),
 	.ce_pix(ce_pix),
 	.ce_pix_out(CE_PIXEL),
 
