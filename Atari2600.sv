@@ -204,6 +204,7 @@ wire  [7:0] ioctl_dout;
 wire        ioctl_download;
 wire  [7:0] ioctl_index; 
 wire [31:0] ioctl_file_ext;
+wire [21:0] gamma_bus;
 
 wire        forced_scandoubler;
 
@@ -226,6 +227,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.buttons(buttons),
 	.status(status),
 	.forced_scandoubler(forced_scandoubler),
+	.gamma_bus(gamma_bus),
 
 	.ps2_kbd_led_use(0),
 	.ps2_kbd_led_status(0),
@@ -391,10 +393,10 @@ assign VGA_DE = de & ~(VGA_VS|VGA_HS);
 
 wire de;
 
-video_mixer #(.LINE_LENGTH(250)) video_mixer
+video_mixer #(.LINE_LENGTH(250), .GAMMA(1)) video_mixer
 (
 	.*,
-	.clk_sys(CLK_VIDEO),
+	.clk_vid(CLK_VIDEO),
 	.ce_pix(ce_pix),
 	.ce_pix_out(CE_PIXEL),
 
