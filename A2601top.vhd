@@ -225,15 +225,10 @@ rst <= reset when rising_edge(clk);
 
 process(clk) begin
 	if rising_edge(clk) then
-		if p_type /= "10" then
-			paddle_ena12 <= p_type(0);
-			paddle_ena34 <= p_type(0);
-		else
-			if p1_f = '0' then paddle_ena12 <= '0'; end if;
-			if p_1 = '0' or p_2 = '0' then paddle_ena12 <= '1'; end if;
-			if p2_f = '0' then paddle_ena34 <= '0'; end if;
-			if p_3 = '0' or p_4 = '0' then paddle_ena34 <= '1'; end if;
-		end if;
+		if p1_f = '0' then paddle_ena12 <= '0'; end if;
+		if p_1 = '0' or p_2 = '0' then paddle_ena12 <= '1'; end if;
+		if p2_f = '0' then paddle_ena34 <= '0'; end if;
+		if p_3 = '0' or p_4 = '0' then paddle_ena34 <= '1'; end if;
 	end if;
 end process;
 

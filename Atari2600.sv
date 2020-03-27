@@ -323,10 +323,10 @@ A2601top A2601top
 	.p2_u(status[15] ? ~joy_0[3] : ~joy_1[3]),
 	.p2_f(status[15] ? ~joy_0[4] : ~joy_1[4]),
 
-	.p_1(status[15] ? p_2 : p_1),
-	.p_2(status[15] ? p_1 : p_2),
-	.p_3(status[15] ? p_4 : p_3),
-	.p_4(status[15] ? p_3 : p_4),
+	.p_1(status[15] ? ~p_2 : ~p_1),
+	.p_2(status[15] ? ~p_1 : ~p_2),
+	.p_3(status[15] ? ~p_4 : ~p_3),
+	.p_4(status[15] ? ~p_3 : ~p_4),
 
 	.paddle_1(status[15] ? paddle_2 : paddle_1),
 	.paddle_2(status[15] ? paddle_1 : paddle_2),
@@ -335,8 +335,6 @@ A2601top A2601top
 
 	.p_start (~(joy_0[7] | joy_1[7] | joy_2[7] | joy_3[7])),
 	.p_select(~(joy_0[8] | joy_1[8] | joy_2[8] | joy_3[8])),
-
-	.p_type(status[12:11]),
 
 	.p_color(~status[2]),
 
@@ -356,6 +354,7 @@ reg  HSync;
 wire HBlank, VBlank;
 reg VSync;
 
+/*
 always @(posedge CLK_VIDEO) begin
 	reg       old_vbl;
 	reg [2:0] vbl;
@@ -371,6 +370,19 @@ always @(posedge CLK_VIDEO) begin
 
 		{VSync,vbl} <= {vbl,1'b0};
 		if(vblcnt == vspos) {VSync,vbl} <= '1;
+	end
+end
+*/
+
+always @(posedge clk_sys) begin
+	reg       old_vbl;
+	reg [7:0] vbl;
+	
+	HSync <= hs;
+	if(~HSync & hs) begin
+		old_vbl <= VBlank;
+		{VSync,vbl} <= {vbl,1'b0};
+		if(~old_vbl & VBlank) vbl <= 8'b00111100;
 	end
 end
 
