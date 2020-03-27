@@ -8,10 +8,13 @@
 
 ## Usage notes
 
-### Input devices
-* Gamepad can be used as joystick and paddle. In Auto(single) mode joystick mode is activated by Fire button. Paddle mode is activated by Paddle1 button.
-Auto mode is suitable for single play. For multiplay switch the mode in OSD to explicit Joystick or Paddle according to the game.
-* Mouse can be used as Paddle.
+### Paddle
+It's recommended to use mr.Spinner for paddles.
+
+Supported options for paddle:
+* "Paddle Btn" is pressed - mr.Spinner (or known controllers with integrated paddle/spinner) is used .
+* "Stick Btn" is pressed - Analog Stick X/Y is used (maximum angle will choose X or Y).
+* Mouse button L/R is pressed - mouse controlls the P1 paddle (L - X move, R - Y move).
 
 
 ### Supported mappers

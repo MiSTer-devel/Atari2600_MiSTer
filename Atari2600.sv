@@ -153,11 +153,13 @@ localparam CONF_STR = {
 	"O3,Difficulty P1,B,A;",
 	"O4,Difficulty P2,B,A;",
 	"-;",
-	"OBC,Control,Joystick,Paddle,Auto(Single);",
-	"ODE,Paddle map,X1+X2 X3+X4,X1+X3 X2+X4,X1+Y1 X2+Y2,X1-Y1 X2-Y2;",
-	"OF,Paddle swap,No,Yes;",
+	"OF,Swap Joystick,No,Yes;",
+	"OB,Invert Paddle,No,Yes;",
+	"-;",
 	"R0,Reset;",
-	"J1,Fire,Paddle1(x),Paddle2(y),Game Reset,Game Select;",
+	"J1,Fire,Stick Btn,Paddle Btn,Game Reset,Game Select;",
+	"jn,A,B,X|P,Start,Select;",
+	"jp,A,B,X|P,Start,Select;",
 	"V,v",`BUILD_DATE
 };
 
@@ -177,8 +179,6 @@ pll pll
 	.locked(locked)
 );
 
-//assign CLK_VIDEO = clk_sys;
-
 reg ce_pix;
 always @(negedge CLK_VIDEO) begin
 	reg [4:0] div;
@@ -194,6 +194,7 @@ wire reset = RESET | status[0] | buttons[1] | ioctl_download;
 //////////////////   HPS I/O   ///////////////////
 wire [15:0] joy_0,joy_1,joy_2,joy_3;
 wire [15:0] joya_0,joya_1,joya_2,joya_3;
+wire  [7:0] pd_0,pd_1,pd_2,pd_3;
 wire  [1:0] buttons;
 wire [31:0] status;
 wire [24:0] ps2_mouse;
@@ -223,6 +224,10 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.joystick_analog_1(joya_1),
 	.joystick_analog_2(joya_2),
 	.joystick_analog_3(joya_3),
+	.paddle_0(pd_0),
+	.paddle_1(pd_1),
+	.paddle_2(pd_2),
+	.paddle_3(pd_3),
 
 	.buttons(buttons),
 	.status(status),
@@ -291,16 +296,6 @@ assign AUDIO_L = AUDIO_R;
 assign AUDIO_S = 0;
 assign AUDIO_MIX = 0;
 
-wire p_1 = status[14] ? ~j0[5] : ~|j0[6:5];
-wire p_2 = status[14] ? ~j0[6] : status[13] ? ~|joy_2[6:5] : ~|joy_1[6:5];
-wire p_3 = status[14] ? ~joy_1[5] : status[13] ? ~|joy_1[6:5] : ~|joy_2[6:5];
-wire p_4 = status[14] ? ~joy_1[6] : ~|joy_3[6:5];
-
-wire [7:0] paddle_1 = ax;
-wire [7:0] paddle_2 = status[14] ? (status[13] ? ~ay : ay) : status[13] ? joya_2[7:0] : joya_1[7:0];
-wire [7:0] paddle_3 = status[14] ? joya_1[7:0] : status[13] ? joya_1[7:0] : joya_2[7:0];
-wire [7:0] paddle_4 = status[14] ? (status[13] ? ~joya_1[15:8] : joya_1[15:8]) : joya_3[7:0];
-
 A2601top A2601top
 (
 	.reset(reset),
@@ -316,17 +311,17 @@ A2601top A2601top
 	.O_VIDEO_G(G),
 	.O_VIDEO_B(B),
 
-	.p1_r(~joy_0[0]),
-	.p1_l(~joy_0[1]),
-	.p1_d(~joy_0[2]),
-	.p1_u(~joy_0[3]),
-	.p1_f(~joy_0[4]),
+	.p1_r(status[15] ? ~joy_1[0] : ~joy_0[0]),
+	.p1_l(status[15] ? ~joy_1[1] : ~joy_0[1]),
+	.p1_d(status[15] ? ~joy_1[2] : ~joy_0[2]),
+	.p1_u(status[15] ? ~joy_1[3] : ~joy_0[3]),
+	.p1_f(status[15] ? ~joy_1[4] : ~joy_0[4]),
 
-	.p2_r(~joy_1[0]),
-	.p2_l(~joy_1[1]),
-	.p2_d(~joy_1[2]),
-	.p2_u(~joy_1[3]),
-	.p2_f(~joy_1[4]),
+	.p2_r(status[15] ? ~joy_0[0] : ~joy_1[0]),
+	.p2_l(status[15] ? ~joy_0[1] : ~joy_1[1]),
+	.p2_d(status[15] ? ~joy_0[2] : ~joy_1[2]),
+	.p2_u(status[15] ? ~joy_0[3] : ~joy_1[3]),
+	.p2_f(status[15] ? ~joy_0[4] : ~joy_1[4]),
 
 	.p_1(status[15] ? p_2 : p_1),
 	.p_2(status[15] ? p_1 : p_2),
@@ -338,9 +333,9 @@ A2601top A2601top
 	.paddle_3(status[15] ? paddle_4 : paddle_3),
 	.paddle_4(status[15] ? paddle_3 : paddle_4),
 
-	.p_start (~(j0[7] | joy_1[7] | joy_2[7] | joy_3[7])),
-	.p_select(~(j0[8] | joy_1[8] | joy_2[8] | joy_3[8])),
-	
+	.p_start (~(joy_0[7] | joy_1[7] | joy_2[7] | joy_3[7])),
+	.p_select(~(joy_0[8] | joy_1[8] | joy_2[8] | joy_3[8])),
+
 	.p_type(status[12:11]),
 
 	.p_color(~status[2]),
@@ -403,11 +398,95 @@ video_mixer #(.LINE_LENGTH(250), .GAMMA(1)) video_mixer
 	.VGA_DE(de)
 );
 
-//////////////////   ANALOG AXIS   ///////////////////
-reg        emu = 0;
-wire [7:0] ax = emu ? mx[7:0] : joya_0[7:0];
-wire [7:0] ay = emu ? my[7:0] : joya_0[15:8];
-wire [8:0] j0 = emu ? {1'b0, ps2_mouse[2:0], joy_0[4:0]} : joy_0[8:0];
+//////////////////   PADDLES   ///////////////////
+
+wire p_1,p_2,p_3,p_4;
+wire [7:0] paddle_1,paddle_2,paddle_3,paddle_4;
+
+paddle_ctl p1
+(
+	.clk(clk_sys),
+	.inv(status[11]),
+
+	.stick_btn(joy_0[5]),
+	.joy_a(joya_0),
+
+	.paddle_btn(joy_0[6]),
+	.paddle(pd_0),
+
+	.ps2_mouse(ps2_mouse),
+
+	.b_out(p_1),
+	.a_out(paddle_1)
+);
+
+paddle_ctl p2
+(
+	.clk(clk_sys),
+	.inv(status[11]),
+
+	.stick_btn(joy_1[5]),
+	.joy_a(joya_1),
+
+	.paddle_btn(joy_1[6]),
+	.paddle(pd_1),
+
+	.b_out(p_2),
+	.a_out(paddle_2)
+);
+
+paddle_ctl p3
+(
+	.clk(clk_sys),
+	.inv(status[11]),
+
+	.stick_btn(joy_2[5]),
+	.joy_a(joya_2),
+
+	.paddle_btn(joy_2[6]),
+	.paddle(pd_2),
+
+	.b_out(p_3),
+	.a_out(paddle_3)
+);
+
+paddle_ctl p4
+(
+	.clk(clk_sys),
+	.inv(status[11]),
+
+	.stick_btn(joy_3[5]),
+	.joy_a(joya_3),
+
+	.paddle_btn(joy_3[6]),
+	.paddle(pd_3),
+
+	.b_out(p_4),
+	.a_out(paddle_4)
+);
+
+endmodule
+
+module paddle_ctl
+(
+	input        clk,
+	input        inv,
+
+	input        stick_btn,
+	input [15:0] joy_a,
+
+	input        paddle_btn,
+	input  [7:0] paddle,
+
+	input [24:0] ps2_mouse,
+	
+	output reg       b_out,
+	output reg [7:0] a_out
+);
+
+// 0 - paddle, 1 - stick, 2 - mouse
+reg [1:0] inp = 0;
+reg       xy = 0;
 
 reg  signed [8:0] mx = 0;
 wire signed [8:0] mdx = {ps2_mouse[4],ps2_mouse[4],ps2_mouse[15:9]};
@@ -419,21 +498,43 @@ wire signed [8:0] mdy = {ps2_mouse[5],ps2_mouse[5],ps2_mouse[23:17]};
 wire signed [8:0] mdy2 = (mdy > 10) ? 9'd10 : (mdy < -10) ? -9'd10 : mdy;
 wire signed [8:0] nmy = my + mdy2;
 
-always @(posedge clk_sys) begin
+always @(posedge clk) begin
 	reg old_stb = 0;
-	
+	reg [7:0] pre_out;
+
 	old_stb <= ps2_mouse[24];
 	if(old_stb != ps2_mouse[24]) begin
-		emu <= 1;
+		inp <= 2;
 		mx <= (nmx < -128) ? -9'd128 : (nmx > 127) ? 9'd127 : nmx;
 		my <= (nmy < -128) ? -9'd128 : (nmy > 127) ? 9'd127 : nmy;
 	end
 
-	if(joya_0) begin
-		emu <= 0;
-		mx <= 0;
-		my <= 0;
+	if(stick_btn)  inp <= 1;
+	if(paddle_btn) inp <= 0;
+
+	if(inp == 2) begin
+		if(ps2_mouse[1]) xy <= 1;
+		if(ps2_mouse[0]) xy <= 0;
 	end
+
+	if(inp == 1) begin
+		if(!joy_a[15] && (joy_a[15:8] > 100)) xy <= 1;
+		if(!joy_a[7] && (joy_a[7:0] > 100))   xy <= 0;
+	end
+
+	case(inp)
+		0: pre_out <= {~paddle[7],paddle[6:0]};
+		1: pre_out <= xy ? joy_a[15:8] : joy_a[7:0];
+		2: pre_out <= xy ? my[7:0] : mx[7:0];
+	endcase
+	
+	a_out <= inv ? ~pre_out : pre_out;
+
+	case(inp)
+		0: b_out <= paddle_btn;
+		1: b_out <= stick_btn;
+		2: b_out <= |ps2_mouse[1:0];
+	endcase
 end
 
 endmodule
