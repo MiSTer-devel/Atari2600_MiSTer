@@ -249,20 +249,16 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_wait(0)
 );
 
+(* ram_init_file = "rom.mif" *)
+reg [7:0] rom[32768];
+always @(posedge clk_sys) if(ioctl_wr && !ioctl_addr[24:15]) rom[ioctl_addr[14:0]] <= ioctl_dout;
+
+reg  [14:0] rom_a;
+always @(posedge clk_cpu) rom_a <= rom_addr;
+
 wire [14:0] rom_addr;
-wire  [7:0] rom_data;
+wire  [7:0] rom_data = rom[rom_a];
 
-dpram #(15, 8, "rom.mif") rom
-(
-	.clock(clk_sys),
-
-	.data_a(ioctl_dout),
-	.address_a(ioctl_addr[15:0]),
-	.wren_a(ioctl_wr),
-
-	.address_b(rom_addr),
-	.q_b(rom_data)
-);
 
 wire [23:0] ext = (ioctl_file_ext[23:16] == ".") ? ioctl_file_ext[23:0] : ioctl_file_ext[31:8];
 

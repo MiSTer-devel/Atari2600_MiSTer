@@ -1,4 +1,3 @@
-set_global_assignment -name VHDL_FILE bram.vhd
 set_global_assignment -name VHDL_FILE cpu65xx.vhd
 set_global_assignment -name VHDL_FILE Common.vhd
 set_global_assignment -name VHDL_FILE VGAColorTable.vhd
