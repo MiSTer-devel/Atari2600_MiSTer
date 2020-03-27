@@ -285,6 +285,7 @@ always @(posedge clk_sys) begin
 		if (ext == ".P2") force_bs <= 7; // Pitfall II
     	if (ext == ".FA") force_bs <= 8;
     	if (ext == ".CV") force_bs <= 9;
+	if (ext == ".UA") force_bs <= 10;
 	
 		sc <= (!status[10:9]) ? (ioctl_file_ext[8:0] == "S") : status[10];
 	end
