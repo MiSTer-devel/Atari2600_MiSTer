@@ -148,6 +148,7 @@ architecture arch of A2601top is
 	constant BANKFA: bss_type := "1000";
 	constant BANKCV: bss_type := "1001";
 	constant BANK2K: bss_type := "1010";
+        constant BANKUA: bss_type := "1011";
 
 	signal bss:  bss_type := BANK00; 	--bank switching method
 	 
@@ -317,8 +318,8 @@ with cpu_a(11 downto 10) select e0_bank <=
 tf_bank <= bank(1 downto 0) when (cpu_a(11) = '0') else "11";
 
 rom_a <=
-		"00" & e0_bank & cpu_a(9 downto 0) when bss = BANKE0 else
-		"00" & tf_bank & cpu_a(10 downto 0) when bss = BANK3F else
+		"00" & e0_bank & cpu_a(9 downto 0) when bss = BANKE0 or bss = BANKUA else
+		"00" & tf_bank & cpu_a(10 downto 0) when bss = BANK3F or bss = BANKUA else
 		"0100" & std_logic_vector(2047 - DpcCounters(to_integer(unsigned(cpu_a(2 downto 0))))(10 downto 0)) when
 							bss = BANKP2 and cpu_a >= "1" & x"008" and cpu_a <= "1" & x"017" else
 		"0000" & cpu_a(10 downto 0) when bss = BANKCV else
@@ -483,6 +484,12 @@ begin
 					if (cpu_a = "0" & X"03F") then
 						bank(1 downto 0) <= cpu_do(1 downto 0);
 					end if;
+				when BANKUA =>
+                        if (cpu_a = "0" & X"220") then
+                            bank(0) <= '0';
+                        elsif (cpu_a = "0" & X"240") then
+                            bank(0) <= '1';
+                        end if;
 				when others =>
 					null;
 			end case;
