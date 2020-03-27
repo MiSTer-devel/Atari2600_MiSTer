@@ -2,6 +2,7 @@ set_global_assignment -name VHDL_FILE cpu65xx.vhd
 set_global_assignment -name VHDL_FILE Common.vhd
 set_global_assignment -name VHDL_FILE VGAColorTable.vhd
 set_global_assignment -name VHDL_FILE TIA.vhd
+set_global_assignment -name VHDL_FILE audio_argh2600.vhd
 set_global_assignment -name VHDL_FILE A6532.vhd
 set_global_assignment -name VHDL_FILE A6507.vhd
 set_global_assignment -name VHDL_FILE A2601Core.vhd
