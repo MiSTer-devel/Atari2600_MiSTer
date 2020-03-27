@@ -863,8 +863,7 @@ begin
     process(clk, a, di, r, cs, cx, inpt45_len, inpt0, inpt1, inpt2, inpt3, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2, floating_bus)
     begin
         if (r = '1') and (cs = '1') then
-            do(5 downto 0) <= floating_bus(5 downto 0);
-
+            do(5 downto 0) <= "000000";
             case a(3 downto 0) is
                 when A_CXM0P =>
                     do(7 downto 6) <= cx(1 downto 0);
@@ -935,7 +934,7 @@ begin
         end if;
 
         if rising_edge(clk) then
-		if cs = '0' then
+            if cs = '0' then
                 floating_bus <= di;
             end if;
 
