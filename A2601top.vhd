@@ -267,16 +267,17 @@ sc_r <= '1' when cpu_a(12 downto 10) = "100" and bss = BANKCV else
                 '0' when cpu_a(12 downto 10) = "100" and bss = BANKE7 and e7_bank0 = "111" else -- 1000-13ff
                 '1' when cpu_a(12 downto  8) = "11001" and bss = BANKE7 else
                 '0' when cpu_a(12 downto  8) = "11000" and bss = BANKE7 else
-                (cpu_a(12 downto  7) = "100000" and sc = '1') or reset = '1' else '1';
-	
-
+                '0' when cpu_a(12 downto  7) = "100000" and sc = '1' else '1';
+				
  sc_a <=
          "0" & cpu_a(9 downto 0) when bss = BANKCV else
        "000" & cpu_a(7 downto 0) when bss = BANKFA else
-	     "0" & cpu_a(9 downto 0) when bss = BANKE7 and cpu_a(12 downto 11) = "10" else
+	 "0" & cpu_a(9 downto 0) when bss = BANKE7 and cpu_a(12 downto 11) = "10" else
          "1" & e7_rambank & cpu_a(7 downto 0) when bss = BANKE7 and cpu_a(12 downto 9) = "1100" else
       "0000" & cpu_a(6 downto 0);
 
+		 
+		 
 -- ROM and SC output
 process(cpu_a, rom_do, sc_d_out, sc, bss, DpcFlags, DpcRandom, DpcMusicModes, DpcMusicFlags, soundAmplitudes)
 	variable ampI_v :std_logic_vector(2 downto 0);
@@ -312,7 +313,7 @@ begin
 		cpu_di <= x"FF";
 
 	elsif bss = BANKE7 and cpu_a(12 downto 11) = "101" and e7_bank0 = "111" then
-			cpu_d <= sc_d_out;
+			cpu_di <= sc_d_out;
 		elsif bss = BANKE7 and cpu_a(12 downto 11) = "100" and e7_bank0 = "111" then
 			cpu_di <= x"FF";
 		elsif bss = BANKE7 and cpu_a(12 downto 8) = "11001" then
