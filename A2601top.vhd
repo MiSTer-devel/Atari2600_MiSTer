@@ -148,6 +148,7 @@ architecture arch of A2601top is
 	constant BANKFA: bss_type := "1000";
 	constant BANKCV: bss_type := "1001";
 	constant BANK2K: bss_type := "1010";
+	constant BANKUA: bss_type := "1011";
 
 	signal bss:  bss_type := BANK00; 	--bank switching method
 	 
@@ -482,6 +483,12 @@ begin
 				when BANK3F =>
 					if (cpu_a = "0" & X"03F") then
 						bank(1 downto 0) <= cpu_do(1 downto 0);
+					end if;
+				when BANKUA =>
+					if (cpu_a = "0" & X"220") then
+						bank <= "0000";
+					elsif (cpu_a = "0" & X"240") then
+						bank <= "0001";
 					end if;
 				when others =>
 					null;
