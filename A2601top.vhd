@@ -259,13 +259,15 @@ audio <= std_logic_vector(auv0 + auv1);
 
 ram: work.ramx8 generic map(11) port map(clk, sc_r, cpu_do, sc_d_out, sc_a);
 
-sc_r <= '0' when (cpu_a(12 downto 10) = "101" and bss = BANKCV) or
-                 (cpu_a(12 downto  8) = "10000" and bss = BANKFA) or 
-	         '1' when cpu_a(12 downto 11) = "10" and bss = BANKE7 and (cpu_a(10) = '1' or e7_bank0 /= "111") else -- 1400 - 17ff
-                 '0' when cpu_a(12 downto 10) = "100" and bss = BANKE7 and e7_bank0 = "111" else -- 1000-13ff
-                 '1' when cpu_a(12 downto  8) = "11001" and bss = BANKE7 else
-                 '0' when cpu_a(12 downto  8) = "11000" and bss = BANKE7 else
-                 (cpu_a(12 downto  7) = "100000" and sc = '1') or reset = '1' else '1';
+sc_r <= '1' when cpu_a(12 downto 10) = "100" and bss = BANKCV else
+                 0' when cpu_a(12 downto 10) = "101" and bss = BANKCV else
+            	'1' when cpu_a(12 downto  8) = "10001" and bss = BANKFA else
+            	'0' when cpu_a(12 downto  8) = "10000" and bss = BANKFA else
+	        '1' when cpu_a(12 downto 11) = "10" and bss = BANKE7 and (cpu_a(10) = '1' or e7_bank0 /= "111") else -- 1400 - 17ff
+                '0' when cpu_a(12 downto 10) = "100" and bss = BANKE7 and e7_bank0 = "111" else -- 1000-13ff
+                '1' when cpu_a(12 downto  8) = "11001" and bss = BANKE7 else
+                '0' when cpu_a(12 downto  8) = "11000" and bss = BANKE7 else
+                (cpu_a(12 downto  7) = "100000" and sc = '1') or reset = '1' else '1';
 	
 
  sc_a <=
