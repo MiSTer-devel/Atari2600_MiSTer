@@ -260,7 +260,7 @@ audio <= std_logic_vector(auv0 + auv1);
 ram: work.ramx8 generic map(11) port map(clk, sc_r, cpu_do, sc_d_out, sc_a);
 
 sc_r <= '1' when cpu_a(12 downto 10) = "100" and bss = BANKCV else
-                 0' when cpu_a(12 downto 10) = "101" and bss = BANKCV else
+                '0' when cpu_a(12 downto 10) = "101" and bss = BANKCV else
             	'1' when cpu_a(12 downto  8) = "10001" and bss = BANKFA else
             	'0' when cpu_a(12 downto  8) = "10000" and bss = BANKFA else
 	        '1' when cpu_a(12 downto 11) = "10" and bss = BANKE7 and (cpu_a(10) = '1' or e7_bank0 /= "111") else -- 1400 - 17ff
