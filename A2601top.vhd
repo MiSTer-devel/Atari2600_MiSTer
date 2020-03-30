@@ -318,8 +318,9 @@ with cpu_a(11 downto 10) select e0_bank <=
 tf_bank <= bank(1 downto 0) when (cpu_a(11) = '0') else "11";
 
 rom_a <=
-		"00" & e0_bank & cpu_a(9 downto 0) when bss = BANKE0 or bss = BANKUA else
-		"00" & tf_bank & cpu_a(10 downto 0) when bss = BANK3F or bss = BANKUA else
+		"00" & e0_bank & cpu_a(9 downto 0) when bss = BANKE0 else
+		"00" & tf_bank & cpu_a(10 downto 0) when bss = BANK3F else
+		"00" & bank(0) & cpu_a(11 downto 0) when bss = BANKUA else
 		"0100" & std_logic_vector(2047 - DpcCounters(to_integer(unsigned(cpu_a(2 downto 0))))(10 downto 0)) when
 							bss = BANKP2 and cpu_a >= "1" & x"008" and cpu_a <= "1" & x"017" else
 		"0000" & cpu_a(10 downto 0) when bss = BANKCV else
