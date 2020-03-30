@@ -152,7 +152,7 @@ architecture arch of A2601top is
 	constant BANKCV: bss_type := "1001";
 	constant BANK2K: bss_type := "1010";
 	constant BANKUA: bss_type := "1011";
-	constant BANKE7: bss_type := "1010";
+	constant BANKE7: bss_type := "1100";
 
 	signal bss:  bss_type := BANK00; 	--bank switching method
 	 
