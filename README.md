@@ -212,7 +212,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Radar | 4K | NTSC | Zellers | 74f623833429d35341b7a84bc09793c0 |
 | Radar | 4K | NTSC | Zellers | 74f623833429d35341b7a84bc09793c0 |
 | Crypts of Chaos | 4K | NTSC |  | 384f5fbf57b5e92ed708935ebf8a8610 |
-| Crystal Castles | F6SC | NTSC | Atari | 1c6eb740d3c485766cade566abab8208 |
+| Crystal Castles | F6S | NTSC | Atari | 1c6eb740d3c485766cade566abab8208 |
 | Cubicolor | 4K | NTSC | Imagic  | 6fa0ac6943e33637d8e77df14962fbfc |
 | Cubo Magico | 4K | NTSC | CCE | 64ca518905311d2d9aeb56273f6caa04 |
 | Custer's Revenge | 4K | NTSC | Mystique | 58513bae774360b96866a07ca0e8fd8e |
@@ -374,7 +374,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Journey Escape | 4K | NTSC | Data Age | 718ae62c70af4e5fd8e932fee216948a |
 | Joust | F8 | NTSC | Atari | 3276c777cbe97cdd2b4a63ffc16b7151 |
 | JoustPong | 4K | NTSC |  | ec40d4b995a795650cf5979726da67df |
-| Jr. Pac-Man | F6SC | NTSC | Atari | 36c29ceee2c151b23a1ad7aa04bd529d |
+| Jr. Pac-Man | F6S | NTSC | Atari | 36c29ceee2c151b23a1ad7aa04bd529d |
 | Jungle Fever | 4K | NTSC | PlayAround | 2cccc079c15e9af94246f867ffc7e9bf |
 | Jungle Hunt | F8 | NTSC | Atari | 2bb9f4686f7e08c5fcc69ec1a1c66fe7 |
 | Kaboom! | 2K | NTSC | Activision | 5428cdfada281c569c74c7308c7f2c26 |
@@ -583,11 +583,11 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Sea Monster | 4K | PAL | BitCorp  | 68489e60268a5e6e052bad9c62681635 |
 | seantsc | 4K | NTSC |  | dde55d9868911407fe8b3fefef396f00 |
 | Seaquest | 4K | NTSC | Activision | 240bfbac5163af4df5ae713985386f92 |
-| Secret Quest | F6SC | NTSC | Atari | fc24a94d4371c69bc58f5245ada43c44 |
+| Secret Quest | F6S | NTSC | Atari | fc24a94d4371c69bc58f5245ada43c44 |
 | Circus Atari | 4K | NTSC | Unknown | efffafc17b7cb01b9ca35324aa767364 |
 | Sentinel | F6 | NTSC | Atari | 8da51e0c4b6b46f7619425119c7d018e |
 | Shark Attack | 4K | NTSC | Apollo | 54f7efa6428f14b9f610ad0ca757e26c |
-| Shooting Arcade | F6SC | NTSC | Atari  | 15c11ab6e4502b2010b18366133fc322 |
+| Shooting Arcade | F6S | NTSC | Atari  | 15c11ab6e4502b2010b18366133fc322 |
 | Shootin' Gallery | 4K | NTSC | Imagic | b5a1a189601a785bdb2f02a424080412 |
 | Shuttle Orbiter | 4K | NTSC | Avalon Hill | 25b6dc012cdba63704ea9535c6987beb |
 | Sinistar | F8 | NTSC | Atari  | ea38fcfc06ad87a0aed1a3d1588744e4 |
@@ -656,7 +656,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Spike's Peak | F8 | NTSC | Xonox | a4e885726af9d97b12bb5a36792eab63 |
 | Spitfire Attack | 4K | NTSC | Milton Bradley | cef2287d5fd80216b2200fb2ef1adfa8 |
 | Springer | 3F | NTSC | Tigervision | 4cd796b5911ed3f1062e805a3df33d98 |
-| Sprint Master | F6SC | NTSC | Atari | 5a8afe5422abbfb0a342fb15afd7415f |
+| Sprint Master | F6S | NTSC | Atari | 5a8afe5422abbfb0a342fb15afd7415f |
 | Spy Hunter | F8 | NTSC | Sega | 3105967f7222cc36a5ac6e5f6e89a0b4 |
 | Squeeze Box | 4K | NTSC | U.S. Games | ba257438f8a78862a9e014d831143690 |
 | Squoosh | 4K | NTSC | Apollo  | 22abbdcb094d014388d529352abe9b4b |
