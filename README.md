@@ -505,7 +505,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Picnic | 4K | NTSC | U.S. Games | 17c0a63f9a680e7a61beba81692d9297 |
 | Piece o' Cake | 4K | NTSC | U.S. Games | d3423d7600879174c038f53e5ebbf9d3 |
 | Pigs in Space | F8 | NTSC | Atari | 8e4fa8c6ad8d8dce0db8c991c166cdaa |
-| Pitfall II | DPC | NTSC | Activision | 6d842c96d5a01967be9680080dd5be54 |
+| Pitfall II | P2 | NTSC | Activision | 6d842c96d5a01967be9680080dd5be54 |
 | Pitfall! | 4K | NTSC | Activision  | aad91be0bf78d33d29758876d999848a |
 | Pitfall! | 4K | NTSC | No Walls Hack | e42b937c30c617241ca9e01e4510c3f6 |
 | Pitfall! | 4K | NTSC | Activision | 3e90cf23106f2e08b2781e41299de556 |
