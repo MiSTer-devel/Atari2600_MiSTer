@@ -276,7 +276,7 @@ sc_a <= "0" & cpu_a(9 downto 0)              when bss = BANKCV else
         "0000" & cpu_a(6 downto 0);
 
 -- ROM and SC output
-process(cpu_a, rom_do, sc_d_out, sc, bss, DpcFlags, DpcRandom, DpcMusicModes, DpcMusicFlags, soundAmplitudes)
+process(cpu_a, rom_do, sc_d_out, sc, bss, DpcFlags, DpcRandom, DpcMusicModes, DpcMusicFlags, soundAmplitudes, e7_bank0)
 	variable ampI_v :std_logic_vector(2 downto 0);
 	variable masked0_v :std_logic_vector(7 downto 0);
 	variable masked1_v :std_logic_vector(7 downto 0);
@@ -309,14 +309,14 @@ begin
 	elsif bss = BANKFA and cpu_a(12 downto 8) = "10000" then
 		cpu_di <= x"FF";
 
-	elsif bss = BANKE7 and cpu_a(12 downto 11) = "101" and e7_bank0 = "111" then
-			cpu_di <= sc_d_out;
-		elsif bss = BANKE7 and cpu_a(12 downto 11) = "100" and e7_bank0 = "111" then
-			cpu_di <= x"FF";
-		elsif bss = BANKE7 and cpu_a(12 downto 8) = "11001" then
-			cpu_di <= sc_d_out;
-		elsif bss = BANKE7 and cpu_a(12 downto 8) = "11000" then
-			cpu_di <= x"FF";
+	elsif bss = BANKE7 and cpu_a(12 downto 10) = "101" and e7_bank0 = "111" then
+		cpu_di <= sc_d_out;
+	elsif bss = BANKE7 and cpu_a(12 downto 10) = "100" and e7_bank0 = "111" then
+		cpu_di <= x"FF";
+	elsif bss = BANKE7 and cpu_a(12 downto 8) = "11001" then
+		cpu_di <= sc_d_out;
+	elsif bss = BANKE7 and cpu_a(12 downto 8) = "11000" then
+		cpu_di <= x"FF";
 
 	elsif (cpu_a(12 downto 7) = "100001" and sc = '1') then
 		cpu_di <= sc_d_out;
@@ -513,7 +513,7 @@ begin
 						bank <= "0001";
 					end if;
 				when BANKE7 =>
-					if cpu_a(11 downto 4) = X"FE" then
+					if cpu_a(12 downto 4) = "1" & X"FE" then
 						if cpu_a(3) = '0' then
 							e7_bank0 <= cpu_a(2 downto 0);   -- FE0-FE7
 						elsif cpu_a(2) = '0' then

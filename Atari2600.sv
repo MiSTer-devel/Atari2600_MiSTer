@@ -288,7 +288,7 @@ always @(posedge clk_sys) begin
 		if (ext == ".UA") force_bs <= 11;
 		if (ext == ".E7") force_bs <= 12;
 
-		sc <= (!status[10:9]) ? (ioctl_file_ext[8:0] == "S") : status[10];
+		sc <= (!status[10:9]) ? (ioctl_file_ext[7:0] == "S") : status[10];
 	end
 end
 
