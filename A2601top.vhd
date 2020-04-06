@@ -79,7 +79,7 @@ entity A2601top is
 
 		sc        : in std_logic; --SuperChip enable
 		force_bs  : in std_logic_vector(3 downto 0); -- forced bank switch type
-		rom_a     : out std_logic_vector(14 downto 0);
+		rom_a     : out std_logic_vector(15 downto 0);
 		rom_do    : in std_logic_vector(7 downto 0);
 		rom_size  : in std_logic_vector(16 downto 0);
 
@@ -104,6 +104,7 @@ architecture arch of A2601top is
 	signal auv1: unsigned(4 downto 0);
 
 	signal rst: std_logic := '1';
+	signal old_rst: std_logic := '1';
 	signal sys_clk_dvdr: unsigned(4 downto 0) := "00000";
 
 	signal ph0: std_logic;
@@ -120,10 +121,13 @@ architecture arch of A2601top is
 	signal sc_r: std_logic;
 	signal sc_d_out: std_logic_vector(7 downto 0);
 	signal sc_a: std_logic_vector(10 downto 0);
+	signal clr_a: std_logic_vector(10 downto 0);
 
 	subtype bss_type is std_logic_vector(3 downto 0);
 
 	signal bank: std_logic_vector(3 downto 0) := "0000";
+	signal banks32: std_logic_vector(4 downto 0) := "00000";
+	signal last_1FF0: std_logic;
 	signal tf_bank: std_logic_vector(1 downto 0);
 	signal e0_bank: std_logic_vector(2 downto 0);
 	signal e0_bank0: std_logic_vector(2 downto 0) := "000";
@@ -153,6 +157,8 @@ architecture arch of A2601top is
 	constant BANK2K: bss_type := "1010";
 	constant BANKUA: bss_type := "1011";
 	constant BANKE7: bss_type := "1100";
+	constant BANKF0: bss_type := "1101";
+	constant BANK32: bss_type := "1110";
 
 	signal bss:  bss_type := BANK00; 	--bank switching method
 	 
@@ -259,7 +265,8 @@ audio <= std_logic_vector(auv0 + auv1);
 
 ram: work.ramx8 generic map(11) port map(clk, sc_r, cpu_do, sc_d_out, sc_a);
 
-sc_r <= '1' when bss = BANKCV and cpu_a(12 downto 10) = "100" else
+sc_r <= '0' when rst = '1' else
+        '1' when bss = BANKCV and cpu_a(12 downto 10) = "100" else
         '0' when bss = BANKCV and cpu_a(12 downto 10) = "101" else
         '1' when bss = BANKFA and cpu_a(12 downto  8) = "10001" else
         '0' when bss = BANKFA and cpu_a(12 downto  8) = "10000" else
@@ -269,7 +276,8 @@ sc_r <= '1' when bss = BANKCV and cpu_a(12 downto 10) = "100" else
         '0' when bss = BANKE7 and cpu_a(12 downto  8) = "11000" else
         '0' when (cpu_a(12 downto  7) = "100000" and sc = '1') or reset = '1' else '1';
 
-sc_a <= "0" & cpu_a(9 downto 0)              when bss = BANKCV else
+sc_a <= clr_a                                when rst = '1'    else
+        "0" & cpu_a(9 downto 0)              when bss = BANKCV else
         "000" & cpu_a(7 downto 0)            when bss = BANKFA else
         "0" & cpu_a(9 downto 0)              when bss = BANKE7 and cpu_a(12 downto 11) = "10" else
         "1" & e7_rambank & cpu_a(7 downto 0) when bss = BANKE7 and cpu_a(12 downto 9) = "1100" else
@@ -338,26 +346,36 @@ with cpu_a(11 downto 10) select e0_bank <=
 
 tf_bank <= bank(1 downto 0) when (cpu_a(11) = '0') else "11";
 
-rom_a <= "00" & e0_bank & cpu_a(9 downto 0)  when bss = BANKE0 else
-         "00" & tf_bank & cpu_a(10 downto 0) when bss = BANK3F else
-         "0100" & std_logic_vector(2047 - DpcCounters(to_integer(unsigned(cpu_a(2 downto 0))))(10 downto 0))
-                                             when bss = BANKP2 and cpu_a >= "1" & x"008" and cpu_a <= "1" & x"017" else
-         "0000" & cpu_a(10 downto 0)         when bss = BANKCV else
-         "0000" & cpu_a(10 downto 0)         when bss = BANK2K else
-         "0" & e7_bank0 & cpu_a(10 downto 0) when bss = BANKE7 and cpu_a(12 downto 11) = "10" else
-         "0111" & cpu_a(10 downto 0)         when bss = BANKE7 and (cpu_a(12 downto 11) = "11" or cpu_a(12 downto 10) = "101") else
-         bank(2 downto 0) & cpu_a(11 downto 0);
+rom_a <= "000" & e0_bank & cpu_a(9 downto 0)  when bss = BANKE0 else
+         "000" & tf_bank & cpu_a(10 downto 0) when bss = BANK3F else
+         "00100" & std_logic_vector(2047 - DpcCounters(to_integer(unsigned(cpu_a(2 downto 0))))(10 downto 0))
+                                              when bss = BANKP2 and cpu_a >= "1" & x"008" and cpu_a <= "1" & x"017" else
+         "00000" & cpu_a(10 downto 0)         when bss = BANKCV else
+         "00000" & cpu_a(10 downto 0)         when bss = BANK2K else
+         "00" & e7_bank0 & cpu_a(10 downto 0) when bss = BANKE7 and cpu_a(12 downto 11) = "10" else
+         "00111" & cpu_a(10 downto 0)         when bss = BANKE7 and (cpu_a(12 downto 11) = "11" or cpu_a(12 downto 10) = "101") else
+         banks32 & cpu_a(10 downto 0)         when bss = BANK32 else
+         bank(3 downto 0) & cpu_a(11 downto 0);
 
 process(ph0)
 	variable w_index_v :integer; 
 	variable addr_v :std_logic_vector(12 downto 0); 
 begin
 	if rising_edge(ph0) then
+		old_rst <= rst;
+		clr_a <= clr_a + 1;
 		if (rst = '1') then
 			bank <= "0000";
+			last_1FF0 <= '0';
 			e0_bank0 <= "000";
 			e0_bank1 <= "000";
 			e0_bank2 <= "000";
+			if old_rst = '0' then
+				banks32 <= banks32 + 1;
+			end if;
+			if bss /= BANK32 then
+				banks32 <= "00000";
+			end if;
 		else
 			case bss is
 				when BANKFA =>
@@ -520,6 +538,15 @@ begin
 							e7_rambank <= cpu_a(1 downto 0); -- FE8-FEB
 						end if;
 					end if;
+				when BANKF0 =>
+					if cpu_a = "1" & X"FF0" then
+						if last_1FF0 = '0' then
+							bank <= bank + 1;
+						end if;
+						last_1FF0 <= '1';
+					else
+						last_1FF0 <= '0';
+					end if;
 				when others =>
 					null;
 			end case;
@@ -546,6 +573,8 @@ begin
 		bss <= BANKF6;
 	elsif(rom_size <= '0'&x"8000") then -- 32k and less
 		bss <= BANKF4;
+	elsif(rom_size <= '1'&x"0000") then -- 64k and less
+		bss <= BANK32;
 	else
 		bss <= BANK00;
 	end if;

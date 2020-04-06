@@ -70,7 +70,7 @@ ph2_out <= ph2;
 
 r <= read;
 a <= cpu_a;
-do <= cpu_do and tia_do and riot_do;
+do <= cpu_do and tia_do and riot_do when rst = '0' else (others => '0');
 
 cpu_A6507: work.A6507
 port map(

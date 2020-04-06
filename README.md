@@ -18,8 +18,8 @@ Supported options for paddle:
 
 
 ### Supported mappers
-* Auto detected: F8, FA, F6, F4, FA
-* Manual set through file extension(ex: my_game.E0) : E0, FE, 3F, P2, CV, UA, E7
+* Auto detected: F8, FA, F6, F4, FA, 32
+* Manual set through file extension(ex: my_game.E0) : E0, FE, 3F, P2, CV, UA, E7, F0
 * SuperChip (128b RAM). 's' can be added to extension to automatically enable SuperChip (i.e. my_game.00s).
 * Any supported mapper can be forced through file extension.
 
@@ -55,7 +55,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | 2 Pak Special - Challenge, Surfing | F6 | PAL | fd7464edaa8cc264b97ba0d13e7f0678 |
 | 2 Pak Special - Hoppy, Alien Force | F6 | PAL | 5b9c2e0012fbfd29efd3306359bbfc4a |
 | 2 Pak Special - Star Warrior, Frogger | F6 | PAL | 4d2cef8f19cafeec72d142e34a1bbc03 |
-| 32 in 1 Game Cartridge | F0 | PAL | 291bcdb05f2b37cdf9452d2bf08e0321 |
+| 32 in 1 Game Cartridge | 32 | PAL | 291bcdb05f2b37cdf9452d2bf08e0321 |
 | 3-D Tic-Tac-Toe | | NTSC | 0db4f4150fecf77e4ce72ca4d04c052f |
 | 3-D Tic-Tac-Toe | | NTSC | f3213a8a702b0646d2eaf9ee0722b51c |
 | 3-D Tic-Tac-Toe | | PAL | 7b5207e68ee85b16998bea861987c690 |

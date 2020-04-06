@@ -255,13 +255,13 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 );
 
 (* ram_init_file = "rom.mif" *)
-reg [7:0] rom[32768];
-always @(posedge clk_sys) if(ioctl_wr && !ioctl_addr[24:15]) rom[ioctl_addr[14:0]] <= ioctl_dout;
+reg [7:0] rom[65536];
+always @(posedge clk_sys) if(ioctl_wr && !ioctl_addr[24:16]) rom[ioctl_addr[15:0]] <= ioctl_dout;
 
-reg  [14:0] rom_a;
+reg  [15:0] rom_a;
 always @(posedge clk_cpu) rom_a <= rom_addr;
 
-wire [14:0] rom_addr;
+wire [15:0] rom_addr;
 wire  [7:0] rom_data = rom[rom_a];
 
 
@@ -287,6 +287,8 @@ always @(posedge clk_sys) begin
 		if (ext == ".CV") force_bs <= 9;
 		if (ext == ".UA") force_bs <= 11;
 		if (ext == ".E7") force_bs <= 12;
+		if (ext == ".F0") force_bs <= 13;
+		if (ext == ".32") force_bs <= 14;
 
 		sc <= (!status[10:9]) ? (ioctl_file_ext[7:0] == "S") : status[10];
 	end
