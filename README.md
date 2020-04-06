@@ -50,7 +50,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 
 # Appendix: Mappers
 
-| Title | Bankswitch Type | TV Format | Publisher | MD5 |
+| Title | Bankswitch Type (Extension) | TV Format | Publisher | MD5 |
 | ----- | --------------- | --------- | --------- | --- |
 | 2 Pak Special - Challenge, Surfing | F6 | PAL | HES  | fd7464edaa8cc264b97ba0d13e7f0678 |
 | 2 Pak Special - Hoppy, Alien Force | F6 | PAL | HES  | 5b9c2e0012fbfd29efd3306359bbfc4a |
@@ -200,7 +200,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Ant Party | 2K | PAL | Atari  | afe4eefc7d885c277fc0649507fbcd84 |
 | Cosmic Swarm | 2K | NTSC | CommaVid | 9dec0be14d899e1aac4337acef5ab94a |
 | Cosmic Swarm | 2K | NTSC | CommaVid | e5f17b3e62a21d0df1ca9aee1aa8c7c5 |
-| Crack'ed | F6SC | NTSC | Atari  | fe67087f9c22655ce519616fc6c6ef4d |
+| Crack'ed | F6S | NTSC | Atari  | fe67087f9c22655ce519616fc6c6ef4d |
 | Crackpots | 4K | NTSC | Activision | a184846d8904396830951217b47d13d9 |
 | Crash Dive | 4K | NTSC |  | fb88c400d602fe759ae74ef1716ee84e |
 | Crazy Climber | F8 | NTSC | Atari | 55ef7b65066428367844342ed59f956c |
@@ -217,19 +217,19 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Cubo Magico | 4K | NTSC | CCE | 64ca518905311d2d9aeb56273f6caa04 |
 | Custer's Revenge | 4K | NTSC | Mystique | 58513bae774360b96866a07ca0e8fd8e |
 | Dancing Plate | 4K | PAL | BitCorp  | 929e8a84ed50601d9af8c49b0425c7ea |
-| Dark Chambers | F6SC | NTSC | Atari | 106855474c69d08c8ffa308d47337269 |
+| Dark Chambers | F6S | NTSC | Atari | 106855474c69d08c8ffa308d47337269 |
 | Dark Cavern | 4K | NTSC | M Network | a422194290c64ef9d444da9d6a207807 |
 | Dark Mage | F8 | NTSC | Greg Troutman PD | 6333ef5b5cbb77acd47f558c8b7a95d3 |
 | Deadly Duck | 4K | NTSC |  | e4c00beb17fdc5881757855f2838c816 |
 | Death Trap | 4K | NTSC | Avalon Hill | 4e15ddfd48bca4f0bf999240c47b49f5 |
 | Decathlon | FE | NTSC | Activision | ac7c2260378975614192ca2bc3d20e0b |
-| Defender 2 | F6SC | NTSC |  | d1fc4cf675c9b49fb7deb792f2f3a7a5 |
-| Defender II | F8SC | NTSC | Atari | 3a771876e4b61d42e3a3892ad885d889 |
+| Defender 2 | F6S | NTSC |  | d1fc4cf675c9b49fb7deb792f2f3a7a5 |
+| Defender II | F8S | NTSC | Atari | 3a771876e4b61d42e3a3892ad885d889 |
 | Defender | 4K | NTSC | Atari | 0f643c34e40e3f1daafd9c524d3ffe64 |
 | Demolition Herby | 4K | NTSC | Telesys | d09935802d6760ae58253685ff649268 |
 | Demon Attack | 4K | NTSC | Activision | bcb2967b6a9254bcccaf906468a22241 |
 | Demons to Diamonds | 4K | NTSC | Atari | f91fb8da3223b79f1c9a07b77ebfa0b2 |
-| Desert Falcon | F6SC | NTSC | Atari | fd4f5536fd80f35c64d365df85873418 |
+| Desert Falcon | F6S | NTSC | Atari | fd4f5536fd80f35c64d365df85873418 |
 | Star Wars - Death Star Battle | E0 | NTSC | Parker Bros | 5336f86f6b982cc925532f2e80aa1e17 |
 | Dice Puzzle | 4K | NTSC | Panda | 9222b25a0875022b412e8da37e7f6887 |
 | Dig Dug | F6 | NTSC | Atari | 6dda84fb8e442ecf34241ac0d1d91d69 |
@@ -255,7 +255,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | E.T. - The Extra-Terrestrial | F8 | NTSC | Atari | 615a3bf251a38eb6638cdc7ffbde5480 |
 | Earth Dies Screaming, The | 4K | NTSC |  | 033e21521e0bf4e54e8816873943406d |
 | Eggomania | 4K | NTSC | U.S. Games | 42b2c3b4545f1499a083cfbc4a3b7640 |
-| Elevator Action | F8SC | NTSC | Atari  | 71f8bacfbdca019113f3f0801849057e |
+| Elevator Action | F8S | NTSC | Atari  | 71f8bacfbdca019113f3f0801849057e |
 | Eli's Ladder | 4K | NTSC | Simage | b6812eaf87127f043e78f91f2028f9f4 |
 | Elk Attack | F8 | NTSC | Atari  | 7eafc9827e8d5b1336905939e097aae7 |
 | Encounter at L-5 | 4K | NTSC | Data Age | dbc8829ef6f12db8f463e30f60af209f |
@@ -274,7 +274,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Farmyard Fun | 4K | NTSC | Ariola | f7e07080ed8396b68f2e5788a5c245e2 |
 | Fast Eddie | 4K | NTSC |  | 9de0d45731f90a0a922ab09228510393 |
 | Fast Food | 4K | NTSC | Telesys | 665b8f8ead0eef220ed53886fbd61ec9 |
-| Fatal Run | F4SC | PAL | Ultimate Driving | 074ec425ec20579e64a7ded592155d48 |
+| Fatal Run | F4S | PAL | Ultimate Driving | 074ec425ec20579e64a7ded592155d48 |
 | Fathom | F8 | NTSC | Imagic | 0b55399cf640a2a00ba72dd155a0c140 |
 | Fighter Pilot | F6 | PAL | Activision  | 2ac3a08cfbf1942ba169c3e9e6c47e09 |
 | Final Approach | 4K | NTSC | Apollo | 211fbbdbbca1102dc5b43dc8157c09b3 |
@@ -384,7 +384,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Karate | 4K | NTSC | Ultravision | cedbd67d1ff321c996051eec843f8716 |
 | Keystone Kapers | 4K | NTSC | Activision | be929419902e21bd7830a7a7d746195d |
 | King Kong | 4K | PAL | Tigervision  | 0b1056f1091cfdc5eb0e2301f47ac6c3 |
-| Klax | F6SC | PAL | Atari  | eed9eaf1a0b6a2b9bc4c8032cb43e3fb |
+| Klax | F6S | PAL | Atari  | eed9eaf1a0b6a2b9bc4c8032cb43e3fb |
 | Knight on the Town | 4K | NTSC | PlayAround | 7fcd1766de75c614a3ccc31b25dd5b7a |
 | Kool-Aid Man | 4K | NTSC | M Network | 534e23210dd1993c828d944c6ac4d9fb |
 | Krull | F8 | NTSC | Atari | 4baada22435320d185c95b7dd2bcdb24 |
@@ -425,7 +425,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Meltdown | 4K | NTSC |  | 96e798995af6ed9d8601166d4350f276 |
 | War 2000 | 4K | PAL | Home Vision  | 6522717cfd75d1dba252cbde76992090 |
 | Midnight Magic | F6 | NTSC | Atari | f1554569321dc933c87981cf5c239c43 |
-| Millipede | F6SC | NTSC | Atari | 3c57748c8286cf9e821ecd064f21aaa9 |
+| Millipede | F6S | NTSC | Atari | 3c57748c8286cf9e821ecd064f21aaa9 |
 | Mind Maze | F8 | NTSC | Atari  | 0e224ea74310da4e7e2103400eb1b4bf |
 | Miner 2049er | 3F | NTSC | Tigervision | fa0570561aa80896f0ead05c46351389 |
 | Mines of Minos | 4K | NTSC | CommaVid | 4543b7691914dfd69c3755a5287a95e1 |
@@ -471,7 +471,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Ocean City | 4K | NTSC | Funvision | 4cabc895ea546022c2ecaa5129036634 |
 | Name This Game | 4K | NTSC | U.S. Games | 36306070f0c90a72461551a7a4f3a209 |
 | Off Your Rocker | 4K | NTSC | Amiga  | b6166f15720fdf192932f1f76df5b65d |
-| Off the Wall | F6SC | NTSC | Atari | 98f63949e656ff309cefa672146dc1b8 |
+| Off the Wall | F6S | NTSC | Atari | 98f63949e656ff309cefa672146dc1b8 |
 | Oink! | 4K | NTSC | Activision | c9c25fc536de9a7cdc5b9a916c459110 |
 | Okie Dokie | 2K | NTSC | PD | cca33ae30a58f39e3fc5d80f94dc0362 |
 | Omega Race | FA | NTSC | CBS Electronics | 9947f1ebabb56fd075a96c6d37351efa |
@@ -537,7 +537,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Quick Step! | 4K | NTSC | Imagic | 7eba20c2291a982214cc7cbe8d0b47cd |
 | Rabbit Transit | F8 | NTSC | Atari  | 2e5b184da8a27c4d362b5a81f0b4a68f |
 | Racquetball | 4K | NTSC | Apollo | a20d931a8fddcd6f6116ed21ff5c4832 |
-| Radar Lock | F6SC | NTSC | Atari | baf4ce885aa281fd31711da9b9795485 |
+| Radar Lock | F6S | NTSC | Atari | baf4ce885aa281fd31711da9b9795485 |
 | Raft Rider | 4K | NTSC | U.S. Games | 92a1a605b7ad56d863a56373a866761b |
 | Raiders of the Lost Ark | F8 | NTSC | Atari | f724d3dd2471ed4cf5f191dbb724b69f |
 | Rainbow Invaders | 4K | NTSC |  | cb96b0cf90ab7777a2f6f05e8ad3f694 |
@@ -572,7 +572,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Saboteur | F8 | NTSC | Atari  | 1ec57bbd27bdbd08b60c391c4895c1cf |
 | Secret Agent | 4K | NTSC | Data Age  | 605fd59bfef88901c8c4794193a4cbad |
 | Save Our Ship | 4K | NTSC | Unknown Hack | ed1a784875538c7871d035b7a98c2433 |
-| Save Mary! | F6SC | NTSC | Atari  | 4d502d6fb5b992ee0591569144128f99 |
+| Save Mary! | F6S | NTSC | Atari  | 4d502d6fb5b992ee0591569144128f99 |
 | Save the Whales | 4K | NTSC |  | e377c3af4f54a51b85efe37d4b7029e6 |
 | SCSIcide | 4K | NTSC | Joe Grand | 523f5cbb992f121e2d100f0f9965e33f |
 | SCSIcide | 4K | NTSC | Joe Grand | 523f5cbb992f121e2d100f0f9965e33f |
@@ -676,7 +676,7 @@ Copyright 2006, 2007, 2010 Retromaster.
 | Star Wars - Jedi Arena | 4K | NTSC | Parker Bros | c9f6e521a49a2d15dac56b6ddb3fb4c7 |
 | Star Wars - The Arcade Game | E0 | NTSC | Parker Bros | 6339d28c9a7f92054e70029eb0375837 |
 | Star Wars - The Empire Strikes Back | 4K | NTSC | Parker Bros | 3c8e57a246742fa5d59e517134c0b4e6 |
-| Stargate | F6SC | NTSC |  | 57fa2d09c9e361de7bd2aa3a9575a760 |
+| Stargate | F6S | NTSC |  | 57fa2d09c9e361de7bd2aa3a9575a760 |
 | Stargunner | 4K | NTSC | Telesys | a3c1c70024d7aabb41381adbfb6d3b25 |
 | StarMaster | 4K | NTSC | Activision | d69559f9c9dc6ef528d841bf9d91b275 |
 | Communist Mutants from Space | AR | NTSC | Arcadia | 2c8835aed7f52a0da9ade5226ee5aa75 |
