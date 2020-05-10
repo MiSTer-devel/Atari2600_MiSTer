@@ -254,7 +254,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_wait(0)
 );
 
-(* ram_init_file = "rom.mif" *)
+(* ram_init_file = "rtl/rom.mif" *)
 reg [7:0] rom[65536];
 always @(posedge clk_sys) if(ioctl_wr && !ioctl_addr[24:16]) rom[ioctl_addr[15:0]] <= ioctl_dout;
 
