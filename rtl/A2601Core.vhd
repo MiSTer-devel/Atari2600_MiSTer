@@ -74,7 +74,8 @@ do <= cpu_do and tia_do and riot_do when rst = '0' else (others => '0');
 
 cpu_A6507: work.A6507
 port map(
-	clk     => not clk and ph0,
+	clk     => not clk,
+	cen     => ph0,
 	rst     => rst,
 	rdy     => rdy,
 	do      => cpu_do,

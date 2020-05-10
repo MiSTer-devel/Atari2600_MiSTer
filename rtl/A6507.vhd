@@ -21,46 +21,47 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.ALL;    
 
 entity A6507 is 
-    port(
-		clk: in std_logic;       
-		rst: in std_logic;
-		rdy: in std_logic;
+	port(
+		clk : in  std_logic;
+		cen : in  std_logic;
+		rst : in  std_logic;
+		rdy : in  std_logic;
 		do  : out std_logic_vector(7 downto 0);
 		di  : in  std_logic_vector(7 downto 0);
-		ad: out std_logic_vector(12 downto 0);
-		r: out std_logic
+		ad  : out std_logic_vector(12 downto 0);
+		r   : out std_logic
 	);
 end A6507;
 
 architecture arch of A6507 is
 
-    signal ad_full: unsigned(15 downto 0);
-    signal cpuDo: unsigned(7 downto 0);
-    signal cpuWe: std_logic;
+signal R_W_n : std_logic;
+signal addr  : std_logic_vector(23 downto 0);
+signal cpuDi : std_logic_vector(7 downto 0);
+signal cpuDo : std_logic_vector(7 downto 0);
 
 begin
 
-	ad <= std_logic_vector(ad_full(12 downto 0));
-	do <= x"00" when rst = '1' else std_logic_vector(cpuDo) when cpuWe = '1' else x"FF";
-	r <= not cpuWe;
+ad    <= addr(12 downto 0);
+do    <= x"00" when rst = '1' else cpuDo when R_W_n = '0' else x"FF";
+r     <= R_W_n;
+cpuDi <= cpuDo when R_W_n = '0' else di;
 
-	cpu: entity work.cpu65xx
-	generic map (
-		pipelineOpcode => false,
-		pipelineAluMux => false,
-		pipelineAluOut => false
-	)
-	port map (
-		clk => clk,
-		reset => rst,
-		enable => rdy or cpuWe,
-		nmi_n => '1',
-		irq_n => '1',
-
-		di => unsigned(di),
-		addr => ad_full,
-		do => cpuDo,
-		we => cpuWe
-	);
+cpu : work.T65
+port map(
+	Mode    => "00",
+	Res_n   => not rst,
+	Enable  => cen,
+	Clk     => clk,
+	Rdy     => rdy,
+	Abort_n => '1',
+	IRQ_n   => '1',
+	NMI_n   => '1',
+	SO_n    => '1',
+	R_W_n   => R_W_n,
+	A       => addr,
+	DI      => cpuDi,
+	DO      => cpuDo
+);
 
 end arch;
