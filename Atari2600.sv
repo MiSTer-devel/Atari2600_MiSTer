@@ -307,7 +307,7 @@ A2601top A2601top
 
 	.audio(audio),
 
-	//.O_VSYNC(VSync),
+	.O_VSYNC(vs),
 	.O_HSYNC(hs),
 	.O_HBLANK(HBlank),
 	.O_VBLANK(VBlank),
@@ -353,11 +353,12 @@ A2601top A2601top
 );
 
 wire [7:0] R,G,B;
-wire hs;
+wire hs, vs;
 reg  HSync;
 wire HBlank, VBlank;
-reg VSync;
+reg  vs_g, vs_o, vs_gen;
 
+wire VSync = vs_gen ? vs_g : vs_o;
 /*
 always @(posedge CLK_VIDEO) begin
 	reg       old_vbl;
@@ -385,8 +386,11 @@ always @(posedge clk_sys) begin
 	HSync <= hs;
 	if(~HSync & hs) begin
 		old_vbl <= VBlank;
-		{VSync,vbl} <= {vbl,1'b0};
-		if(~old_vbl & VBlank) vbl <= 8'b00111100;
+		vs_o <= vs;
+
+		{vs_g,vbl} <= {vbl,1'b0};
+		if(~old_vbl & VBlank) vbl <= 8'b00111000;
+		if (~vs_o & vs) vs_gen <= ~VBlank;
 	end
 end
 
