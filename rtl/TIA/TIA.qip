@@ -1,0 +1,5 @@
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) audio_argh2600.vhd]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) Common.vhd]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) NTSCLookups.vhd]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) TIA.vhd]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) VGAColorTable.vhd]

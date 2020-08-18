@@ -64,9 +64,10 @@ module emu
 	// b[0]: osd button
 	output  [1:0] BUTTONS,
 
+	input         CLK_AUDIO, // 24.576 MHz
 	output [15:0] AUDIO_L,
 	output [15:0] AUDIO_R,
-	output        AUDIO_S, // 1 - signed audio samples, 0 - unsigned
+	output        AUDIO_S,   // 1 - signed audio samples, 0 - unsigned
 	output  [1:0] AUDIO_MIX, // 0 - no mix, 1 - 25%, 2 - 50%, 3 - 100% (mono)
 
 	//ADC
@@ -270,7 +271,7 @@ wire [23:0] ext = (ioctl_file_ext[23:16] == ".") ? ioctl_file_ext[23:0] : ioctl_
 reg [3:0] force_bs = 0;
 reg sc = 0;
 always @(posedge clk_sys) begin
-	reg       old_download;
+	reg old_download;
 
 	old_download <= ioctl_download;
 	if(~old_download & ioctl_download) begin
@@ -304,6 +305,7 @@ A2601top A2601top
 (
 	.reset(reset),
 	.clk(clk_cpu),
+	.vid_clk(clk_sys),
 
 	.audio(audio),
 

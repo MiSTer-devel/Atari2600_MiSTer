@@ -20,48 +20,50 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.ALL;    
 
+--use work.types.all;
+
 entity A6507 is 
-	port(
-		clk : in  std_logic;
-		cen : in  std_logic;
-		rst : in  std_logic;
-		rdy : in  std_logic;
-		do  : out std_logic_vector(7 downto 0);
-		di  : in  std_logic_vector(7 downto 0);
-		ad  : out std_logic_vector(12 downto 0);
-		r   : out std_logic
-	);
+    port(clk: in std_logic;       
+         clk_en: in std_logic;
+         rst: in std_logic;
+         rdy: in std_logic;
+         d: inout std_logic_vector(7 downto 0);
+         ad: out std_logic_vector(12 downto 0);
+         r: out std_logic);
 end A6507;
 
 architecture arch of A6507 is
 
-signal R_W_n : std_logic;
-signal addr  : std_logic_vector(23 downto 0);
-signal cpuDi : std_logic_vector(7 downto 0);
-signal cpuDo : std_logic_vector(7 downto 0);
+    signal ad_full: unsigned(23 downto 0);
+    signal cpuDi: std_logic_vector(7 downto 0);
+    signal cpuDo: unsigned(7 downto 0);
+    signal cpuWe: std_logic;
+	signal cpuWe_n: std_logic;
 
 begin
 
-ad    <= addr(12 downto 0);
-do    <= x"00" when rst = '1' else cpuDo when R_W_n = '0' else x"FF";
-r     <= R_W_n;
-cpuDi <= cpuDo when R_W_n = '0' else di;
+    ad <= std_logic_vector(ad_full(12 downto 0));
+    r <= not cpuWe;
+	cpuWe <= not cpuWe_n;
+    
+    cpuDi <= d when cpuWe = '0' else std_logic_vector(cpuDo);
+    d <= std_logic_vector(cpuDo) when cpuWe = '1' else "ZZZZZZZZ";
 
-cpu : work.T65
-port map(
-	Mode    => "00",
-	Res_n   => not rst,
-	Enable  => cen,
-	Clk     => clk,
-	Rdy     => rdy,
-	Abort_n => '1',
-	IRQ_n   => '1',
-	NMI_n   => '1',
-	SO_n    => '1',
-	R_W_n   => R_W_n,
-	A       => addr,
-	DI      => cpuDi,
-	DO      => cpuDo
-);
+	cpu: entity work.t65
+	port map (
+		Mode => "00",
+		Res_n => not rst,
+		Enable => clk_en,-- and (rdy or cpuWe),
+		Clk => clk,
+		Rdy => rdy,--'1',
+		Abort_n => '1',
+		IRQ_n => '1',
+		NMI_n => '1',
+		SO_n => '1',
+		R_W_n => cpuWe_n,
+		unsigned(A) => ad_full,
+		DI => cpuDi,
+		unsigned(DO) => cpuDo
+	);
 
 end arch;

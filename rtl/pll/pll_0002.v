@@ -29,7 +29,7 @@ module  pll_0002(
 		.phase_shift0("0 ps"),
 		.duty_cycle0(50),
 		.output_clock_frequency1("3.579545 MHz"),
-		.phase_shift1("-4365 ps"),
+		.phase_shift1("0 ps"),
 		.duty_cycle1(50),
 		.output_clock_frequency2("85.909080 MHz"),
 		.phase_shift2("0 ps"),

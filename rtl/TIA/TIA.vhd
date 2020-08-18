@@ -18,7 +18,7 @@
 --
 
 library ieee;
-use ieee.std_logic_1164.all;       
+use ieee.std_logic_1164.all;
 
 entity lfsr6 is
    port(clk: in std_logic;
@@ -29,59 +29,69 @@ entity lfsr6 is
 end lfsr6;
 
 architecture arch of lfsr6 is 
+    
     signal d: std_logic_vector(5 downto 0);
     signal prst_l: std_logic := '1';
+
 begin
 
     o <= d;
 
-    process(clk)  
-    begin           
-        if rising_edge(clk) then           
-            if (prst = '1' and prst_l = '0') then 
+    process(clk, prst)
+    begin
+
+        if (clk'event and clk = '1') then
+            if (prst = '1' and prst_l = '0') then
                 prst_l <= '1'; 
-            elsif (cnt = '1') then                      
-                prst_l <= '0';      
-            end if;             
-        end if;             
-        if rising_edge(clk) then           
-            if (cnt = '1') then
-                if (prst_l = '1') then 
-                    d <= "000000";                                      
-                else 
-                    d <= (d(0) xnor d(1)) & d(5 downto 1);
-                end if;                             
+            elsif (cnt = '1') then
+                prst_l <= '0';
             end if;
         end if;
+
+        if (clk'event and clk = '1') then
+            if (cnt = '1') then
+                if (prst_l = '1') then 
+                    d <= "000000";
+                else
+                    d <= (d(0) xnor d(1)) & d(5 downto 1);
+                end if;
+            end if;
+        end if;
+
     end process;
+
 end arch;
 
 library ieee;
-use ieee.std_logic_1164.all;       
+use ieee.std_logic_1164.all;
 
 entity cntr2 is
    port(clk: in std_logic;
-          rst: in std_logic;    
-          en: in std_logic;       
+          rst: in std_logic;
+          en: in std_logic;
           o: out std_logic_vector(1 downto 0)
        );
 end cntr2;
 
 architecture arch of cntr2 is 
+
     signal d: std_logic_vector(1 downto 0) := "00";
+
 begin
 
     o <= d;
 
-    process(clk)
+    process(clk, rst)
     begin
-        if rising_edge(clk) then       
-            if (rst = '1') then 
+--      if (rst = '1') then 
+--          d <= "00";
+        if (clk'event and clk = '1') then
+            if (rst = '1') then
                 d <= "00";
-            elsif (en = '1') then 
-                case d is 
+            elsif (en = '1') then
+                case d is
                     when "00" => d <= "10";
-                    when "10" => d <= "11";                                             
+                    when "10" => d <= "11";
                     when "11" => d <= "01";
                     when "01" => d <= "00";
                     when others => null;
@@ -89,41 +99,44 @@ begin
             end if;
         end if;
     end process;
-
+    
 end arch;
 
 library ieee;
-use ieee.std_logic_1164.all;       
+use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity cntr3 is
-   port(clk: in std_logic;  
-          rst: in std_logic;    
+   port(clk: in std_logic;
+          rst: in std_logic;
           en: in std_logic;
           o: out std_logic_vector(2 downto 0)
        );
 end cntr3;
 
 architecture arch of cntr3 is 
+    
     signal d: unsigned(2 downto 0) := "000";
+    
 begin
 
     o <= std_logic_vector(d);
-    
-    process(clk)
-    begin       
-        if rising_edge(clk) then
+
+    process(clk, rst)
+    begin
+        if (clk'event and clk = '1') then
             if (rst = '1') then 
                 d <= "000";
-            elsif (en = '1') then           
+            elsif (en = '1') then
                 d <= d + 1;
             end if;
         end if;
     end process;
+
 end arch;
 
 library ieee;
-use ieee.std_logic_1164.all;       
+use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.TIA_common.all;
@@ -138,20 +151,22 @@ entity audio is
 end audio;
 
 architecture arch of audio is 
+
     signal dvdr: unsigned(4 downto 0) := "00000";
     signal sr4: std_logic_vector(3 downto 0) := "0000";
     signal sr5: std_logic_vector(4 downto 0) := "00000";
     signal sr5_tap: std_logic;
-    signal sr4_in: std_logic;   
-    signal sr5_in: std_logic;       
-    signal sr4_cnt: std_logic;  
-    signal sr5_cnt: std_logic;      
+    signal sr4_in: std_logic;
+    signal sr5_in: std_logic;
+    signal sr4_cnt: std_logic;
+    signal sr5_cnt: std_logic;
+
 begin
 
     process(clk)
     begin 
-        if rising_edge(clk) then           
-            if (cnt = '1') then                 
+        if (clk'event and clk = '1') then
+            if (cnt = '1') then
                 if (sr4_cnt = '1') then 
                     sr4 <= sr4_in & sr4(3 downto 1);
                 end if;
@@ -164,8 +179,8 @@ begin
                     dvdr <= dvdr + 1;
                 end if;
             end if;
-        end if;                     
-    end process;    
+        end if;
+    end process;
 
     sr5_in <= '1' when 
         (ctrl = "0000") or 
@@ -180,18 +195,18 @@ begin
         (ctrl(3 downto 2) = "01" and sr4(3) = '0') or
         (ctrl(3 downto 2) = "10" and sr5(0) = '1') 
         else '0';
-    
-    sr5_tap <= sr5(0) xor sr4(0) when (ctrl(1 downto 0) = "00") else sr5(0) xor sr5(3);             
-    
+
+    sr5_tap <= sr5(0) xor sr4(0) when (ctrl(1 downto 0) = "00") else sr5(0) xor sr5(3);
+
     sr5_cnt <= '1' when (dvdr = unsigned(freq)) else '0';  -- CHECKME
-        
+
     sr4_cnt <= '1' when 
         (dvdr = unsigned(freq) and (
             (ctrl(1 downto 0) = "10" and sr5(4 downto 1) = "0001") or 
             (ctrl(1 downto 0) = "11" and sr5(0) = '1')  or
             (ctrl(1) = '0')))
         else '0';
-        
+
     ao <= sr4(0);
 
 end arch;
@@ -223,16 +238,16 @@ architecture arch of player is
     signal cntr_out: std_logic_vector(1 downto 0);
     signal cntr_rst: std_logic;
     signal cntr_en: std_logic;
-    
+
     signal scan_out: std_logic_vector(2 downto 0);
     signal scan_clk: std_logic := '0';
-    signal scan_en: std_logic := '0';   
+    signal scan_en: std_logic := '0';
     signal scan_cnt: std_logic;
-        
+
     signal start: std_logic := '0';
 
     signal scan_adr: std_logic_vector(2 downto 0);
-    
+
     signal pix_sel: std_logic_vector(1 downto 0);
 
     signal ph0: std_logic;
@@ -258,10 +273,9 @@ begin
 
     mrst <= '1' when fstob = '1' and scan_out = "001" else '0';
 
-    process(clk)
+    process(clk, count)
     begin
-		if rising_edge(clk) then
-			if (count = '1') then
+        if (clk'event and clk = '1' and count = '1') then
             if (ph1_edge = '1') then
                 if (lfsr_out = "101101") or
                     ((lfsr_out = "111000") and ((nusiz = "001") or (nusiz = "011"))) or
@@ -277,14 +291,12 @@ begin
                     start <= '0';
                 end if;
             end if;
-			end if;
-		end if;
+        end if;
     end process;
 
-    process(clk)
+    process(clk, scan_clk, start, scan_out, count)
     begin
-		if rising_edge(clk) then
-			if (count = '1') then
+        if (clk'event and clk = '1' and count = '1') then
             if (scan_clk = '1') then
                 if (start = '1') then
                     scan_en <= '1';
@@ -292,14 +304,12 @@ begin
                     scan_en <= '0';
                 end if;
             end if;
-			end if;
-		end if;
+        end if;
     end process;
 
-    process (clk)
+    process (clk, ph0, ph1, count)
     begin
-		if rising_edge(clk) then
-			if (count = '1') then
+        if (clk'event and clk = '1' and count = '1') then
             if (nusiz = "111") then
                 scan_clk <= ph1;
             elsif (nusiz = "101") then
@@ -307,8 +317,7 @@ begin
             else
                 scan_clk <= '1';
             end if;
-			end if;
-		end if;
+        end if;
     end process;
 
     scan_adr <= scan_out when reflect = '1' else not scan_out;
@@ -324,12 +333,12 @@ begin
 end arch;
 
 library ieee;
-use ieee.std_logic_1164.all;       
+use ieee.std_logic_1164.all;
 
 entity missile is
    port(clk: in std_logic;
-          prst: in std_logic;       
-          count: in std_logic;        
+          prst: in std_logic;
+          count: in std_logic;
           enable: in std_logic;
           nusiz: in std_logic_vector(2 downto 0);
           size: in std_logic_vector(1 downto 0);
@@ -342,39 +351,39 @@ architecture arch of missile is
     signal lfsr_out: std_logic_vector(5 downto 0);
     signal lfsr_rst: std_logic;
     signal lfsr_cnt: std_logic;
-    
+
     signal cntr_out: std_logic_vector(1 downto 0);
     signal cntr_rst: std_logic;
     signal cntr_en: std_logic;
-    
-    signal start1: std_logic := '0';    
+
+    signal start1: std_logic := '0';
     signal start2: std_logic := '0';
-        
+
     signal ph1: std_logic;
     signal ph1_edge: std_logic;
-    
+
 begin
 
     lfsr: work.lfsr6 port map(clk, lfsr_rst, lfsr_cnt, lfsr_out);
-    cntr: work.cntr2 port map(clk, cntr_rst, cntr_en, cntr_out); 
-        
+    cntr: work.cntr2 port map(clk, cntr_rst, cntr_en, cntr_out);
+
     ph1_edge <= '1' when (cntr_out = "10") else '0';
     ph1 <= '1' when (cntr_out = "11") else '0';
-    
+
     cntr_rst <= prst;
     cntr_en <= count;
-    
-    lfsr_rst <= '1' when (lfsr_out = "101101") or (lfsr_out = "111111") or (prst = '1') else '0';       
+
+    lfsr_rst <= '1' when (lfsr_out = "101101") or (lfsr_out = "111111") or (prst = '1') else '0';
     lfsr_cnt <= '1' when (ph1_edge = '1') and (count = '1') else '0';
-    
+
     process(clk)
     begin 
-        if rising_edge(clk) then                       
+        if (clk'event and clk = '1') then                       
             if (ph1_edge = '1') then            
                 if (lfsr_out = "101101") or
                     ((lfsr_out = "111000") and ((nusiz = "001") or (nusiz = "011"))) or 
                     ((lfsr_out = "101111") and ((nusiz = "011") or (nusiz = "010") or (nusiz = "110"))) or 
-                    ((lfsr_out = "111001") and ((nusiz = "100") or (nusiz = "110"))) then                   
+                    ((lfsr_out = "111001") and ((nusiz = "100") or (nusiz = "110"))) then
                     start1 <= '1';                  
                 else 
                     start1 <= '0';
@@ -384,16 +393,16 @@ begin
             end if;
         end if;
     end process;
-                            
+
     pix <= '1' when 
         (enable = '1' and (
             (start1 = '1' and (
                 (size(1) = '1') or 
                 (ph1 = '1') or 
                 (cntr_out(0) = '1' and size(0) = '1'))) or
-            (start2 = '1' and size = "11")))                            
+                (start2 = '1' and size = "11")))
         else '0';
-            
+
 end arch;
 
 library ieee;
@@ -439,12 +448,12 @@ begin
 end arch;
 
 library ieee;
-use ieee.std_logic_1164.all;       
+use ieee.std_logic_1164.all;
 
 entity ball is
-   port(clk: in std_logic;        
+   port(clk: in std_logic;
           prst: in std_logic;
-          count: in std_logic;        
+          count: in std_logic;
           ennew: in std_logic;
           enold: in std_logic;
           vdel: in std_logic;
@@ -458,14 +467,14 @@ architecture arch of ball is
     signal lfsr_out: std_logic_vector(5 downto 0);
     signal lfsr_rst: std_logic;
     signal lfsr_cnt: std_logic;
-    
+
     signal cntr_out: std_logic_vector(1 downto 0);
     signal cntr_rst: std_logic;
-    signal cntr_en: std_logic;          
-    
-    signal start1: std_logic := '0';    
+    signal cntr_en: std_logic;
+
+    signal start1: std_logic := '0';
     signal start2: std_logic := '0';
-    
+
     signal ph1: std_logic;
     signal ph1_edge: std_logic;
     
@@ -473,55 +482,83 @@ begin
 
     lfsr: work.lfsr6 port map(clk, lfsr_rst, lfsr_cnt, lfsr_out);
     cntr: work.cntr2 port map(clk, cntr_rst, cntr_en, cntr_out);
-    
+
     ph1_edge <= '1' when (cntr_out = "10") else '0';
     ph1 <= '1' when (cntr_out = "11") else '0';
-    
+
     cntr_rst <= prst;
     cntr_en <= count;
-    
-    lfsr_rst <= '1' when (lfsr_out = "101101") or (lfsr_out = "111111") or (prst = '1') else '0';       
+
+    lfsr_rst <= '1' when (lfsr_out = "101101") or (lfsr_out = "111111") or (prst = '1') else '0';
     lfsr_cnt <= '1' when (ph1_edge = '1') and (count = '1') else '0';
-    
+
     process(clk)
     begin 
-        if rising_edge(clk) then           
-            if (ph1_edge = '1') then            
+        if (clk'event and clk = '1') then
+            if (ph1_edge = '1') then
                 if (lfsr_out = "101101") or (prst = '1') then
-                    start1 <= '1';                  
-                else 
+                    start1 <= '1';
+                else
                     start1 <= '0';
                 end if;
-                
+
                 start2 <= start1;
             end if;
         end if;
-    end process;            
-                
+    end process;
+
     pix <= '1' when 
         ((ennew = '1' and vdel = '0') or (enold = '1' and vdel = '1')) and (
             (start1 = '1' and (
                 (size(1) = '1') or 
                 (ph1 = '1') or 
                 (cntr_out(0) = '1' and size(0) = '1'))) or
-            (start2 = '1' and size = "11"))                         
-        else '0';                                               
+            (start2 = '1' and size = "11"))
+        else '0';
 
 end arch;
 
 library ieee;
-use ieee.std_logic_1164.all;       
+use ieee.std_logic_1164.all;
 
 entity mux20 is 
     port(i: in std_logic_vector(19 downto 0);
           a: in std_logic_vector(4 downto 0);
+          rev: in std_logic;
           o: out std_logic
          );
 end mux20; 
 
 architecture arch of mux20 is 
+  signal out_fwd: std_logic;
+  signal out_rev: std_logic;
 begin
-    with a select o <=
+    o <= out_fwd when rev = '0' else out_rev;
+
+    with a select out_rev <=
+        i(19) when "00000",
+        i(18) when "00001",
+        i(17) when "00010",
+        i(16) when "00011",
+        i(15) when "00100",
+        i(14) when "00101",
+        i(13) when "00110",
+        i(12) when "00111",
+        i(4) when "01000",
+        i(5) when "01001",
+        i(6) when "01010",
+        i(7) when "01011",
+        i(8) when "01100",
+        i(9) when "01101",
+        i(10) when "01110",
+        i(11) when "01111",
+        i(3) when "10000",
+        i(2) when "10001",
+        i(1) when "10010",
+        i(0) when "10011",
+        '-' when others;
+
+    with a select out_fwd <=
         i(0) when "00000",
         i(1) when "00001",
         i(2) when "00010",
@@ -542,46 +579,50 @@ begin
         i(17) when "10001",
         i(18) when "10010",
         i(19) when "10011",
-        '-' when others;            
+        '-' when others;
+
 end arch;
 
 library ieee;
-use ieee.std_logic_1164.all;       
-use ieee.numeric_std.all;      
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
 use work.TIA_common.all;
+use work.TIA_NTSCLookups.all;
 
 entity TIA is
-	port
-	(
-		clk: in std_logic;
-		cs: in std_logic;
-		r: in std_logic;
-		a: in std_logic_vector(5 downto 0);
-		di: in std_logic_vector(7 downto 0);
-		do: out std_logic_vector(7 downto 0);
-		colu: out std_logic_vector(6 downto 0);
-		hsyn: out std_logic;
-		vsyn: out std_logic;
-		ohblank: out std_logic;
-		ovblank: out std_logic;
-		rgbx2: out std_logic_vector(23 downto 0);
-		rdy: out std_logic;
-		ph0: out std_logic;
-		ph2: out std_logic;
-		au0: out std_logic;
-		au1: out std_logic;
-		av0: out std_logic_vector(3 downto 0);
-		av1: out std_logic_vector(3 downto 0);
-		paddle_0: in std_logic_vector(7 downto 0);
-		paddle_1: in std_logic_vector(7 downto 0);
-		paddle_ena1: in std_logic;
-		paddle_2: in std_logic_vector(7 downto 0);
-		paddle_3: in std_logic_vector(7 downto 0);
-		paddle_ena2: in std_logic;
-		inpt4: in std_logic;
-		inpt5: in std_logic;
-		pal: in std_logic := '0'
-	);
+    port(vid_clk: in std_logic;
+         clk: in std_logic;
+         cs: in std_logic;
+         r: in std_logic;
+         a: in std_logic_vector(5 downto 0);
+         d: inout std_logic_vector(7 downto 0);
+         colu: out std_logic_vector(6 downto 0);
+         csyn: out std_logic;
+         hsyn: out std_logic;
+         vsyn: out std_logic;
+         ohblank: out std_logic;
+         ovblank: out std_logic;
+         rgbx2: out std_logic_vector(23 downto 0);
+         rdy: out std_logic;
+         ph0: out std_logic;
+         ph0_en: out std_logic;
+         ph2: out std_logic;
+         ph2_en: out std_logic;
+         au0: out std_logic;
+         au1: out std_logic;
+         av0: out std_logic_vector(3 downto 0);
+         av1: out std_logic_vector(3 downto 0);
+         paddle_0: in std_logic_vector(7 downto 0);
+         paddle_1: in std_logic_vector(7 downto 0);
+         paddle_ena1: in std_logic;
+         paddle_2: in std_logic_vector(7 downto 0);
+         paddle_3: in std_logic_vector(7 downto 0);
+         paddle_ena2: in std_logic;
+         inpt4: in std_logic;
+         inpt5: in std_logic;
+         pal: in std_logic := '0'
+        );
 end TIA;
 
 architecture arch of TIA is
@@ -660,6 +701,7 @@ architecture arch of TIA is
     signal pf_pix: std_logic;
     signal pf_mux_out: std_logic;
     signal pf_reflect: std_logic;
+    signal pf_reverse: std_logic;
     signal pf_score: std_logic;
     signal pf_priority: std_logic := '0';
     signal pf_colu: std_logic_vector(6 downto 0) := "0000000";
@@ -686,8 +728,10 @@ architecture arch of TIA is
 
     signal clk_dvdr: std_logic_vector(1 downto 0) := "01";
     signal phi0: std_logic := '0';
+    signal phi0_en: std_logic := '0';
     signal phi2: std_logic := '1';
-    signal phi2_d: std_logic := '1';
+    signal phi2_d: std_logic;
+    signal phi2_en: std_logic;
 
     signal inpt45_len: std_logic := '0';
     signal inpt45_rst: std_logic;
@@ -704,6 +748,8 @@ architecture arch of TIA is
     signal hh1: std_logic;
     signal hh1_edge: std_logic;
 
+    --signal clk, clkx2: std_logic;
+
     signal sync: std_logic;
     signal blank: std_logic;
 
@@ -712,11 +758,17 @@ architecture arch of TIA is
     signal col_lut_idx: std_logic_vector(7 downto 0);
     signal col_lu: unsigned(7 downto 0);
 
+    signal vid_clk_dvdr: unsigned(2 downto 0) := "000";
+
+    signal vga_colu: std_logic_vector(6 downto 0);
+
     signal inpt03_chg: std_logic;
     signal inpt0: std_logic;
     signal inpt1: std_logic;
     signal inpt2: std_logic;
     signal inpt3: std_logic;
+
+    signal floating_bus: std_logic_vector(7 downto 0);
 
 begin
     paddle0: work.paddle port map(clk, hsync, paddle_0, inpt03_chg, inpt0);
@@ -726,11 +778,12 @@ begin
 
     h_cntr: work.cntr2 port map(clk, h_cntr_rst, '1', h_cntr_out);
     lfsr: work.lfsr6 port map(clk, h_lfsr_rst, h_lfsr_cnt, h_lfsr_out);
-    pf_mux: work.mux20 port map(pf_gr, std_logic_vector(pf_adr), pf_mux_out);
+    pf_mux: work.mux20 port map(pf_gr, std_logic_vector(pf_adr), pf_reverse, pf_mux_out);
 
     hh0_edge <= '1' when (h_cntr_out = "01") else '0';
     hh0 <= '1' when (h_cntr_out = "00") else '0';
     hh1_edge <= '1' when (h_cntr_out = "10") else '0';
+    --hh1 <= '1' when (h_cntr_out = "11") else '0';
 
     aud0: work.audio_argh2600 port map(clk, au_cnt, a0_freq, a0_ctrl, au0);
     aud1: work.audio_argh2600 port map(clk, au_cnt, a1_freq, a1_ctrl, au1);
@@ -744,15 +797,18 @@ begin
     h_lfsr_cnt <= '1' when (hh1_edge = '1') else '0';
     h_cntr_rst <= '1' when (r = '0') and (cs = '1') and (a = A_RSYNC) else '0';
 
-    h_decode: process(clk)
+    h_decode: process(clk, h_lfsr_out)
     begin
-        if rising_edge(clk) then
+        if (clk'event and clk = '1') then
             if (hh1_edge = '1') then
                 case h_lfsr_out is
                     when "111100" =>
                         hsync <= '1';
                     when "110111" =>
                         hsync <= '0';
+                        --cburst <= '1';
+                    when "001111" =>
+                        --cburst <= '0';
                     when "111001" =>
                         pf_cnt <= '1';
                     when "011100" =>
@@ -778,7 +834,7 @@ begin
 
     process(clk)
     begin
-        if rising_edge(clk) then
+        if (clk'event and clk = '1') then
             if (h_lfsr_out = "101001") and (hh1_edge = '1') then
                 hmove <= '0';
             elsif (hmove_set = '1') then
@@ -789,7 +845,7 @@ begin
 
     process(clk)
     begin
-        if rising_edge(clk) then
+        if (clk'event and clk = '1') then
             if (h_lfsr_out = "000000" and hh1_edge = '1') then
                 wsync <= '0';
             elsif (r = '0') and (cs = '1') and (a = A_WSYNC) then
@@ -798,6 +854,7 @@ begin
         end if;
     end process;
 
+    csyn <= (vsync nand hsync) and (vsync or hsync);
     vsyn <= vsync;
     hsyn <= hsync;
 
@@ -820,20 +877,20 @@ begin
     bl: work.ball
         port map(clk, bl_rst, bl_count, bl_ennew, bl_enold, bl_vdel, bl_size, bl_pix);
 
-    pf_output: process(clk)
+    pf_output: process(clk, h_lfsr_cnt)
     begin
-        if rising_edge(clk) then
+        if (clk'event and clk = '1') then
             if (h_lfsr_cnt = '1') then
                 if (pf_cnt = '1') then
-                    if (pf_adr = "10011") and (center = '0') and (pf_reflect = '0') then
+                    if (pf_adr = "10011") then
                         pf_adr <= "00000";
-                    elsif (pf_reflect = '1') and (center = '1') and not (pf_adr = "00000") then
-                        pf_adr <= pf_adr - 1;
+                        pf_reverse <= pf_reflect;
                     elsif not (pf_adr = "10011") then
                         pf_adr <= pf_adr + 1;
                     end if;
                 else
                     pf_adr <= "00000";
+                    pf_reverse <= '0';
                 end if;
 
                 pf_pix <= pf_mux_out;
@@ -858,105 +915,112 @@ begin
 
     inpt45_rst <= '1' when (a = A_VBLANK) and (r = '0') and (cs = '1') else '0';
 
-    process(clk, a, di, r, cs, cx, inpt45_len, inpt0, inpt1, inpt2, inpt3, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2)
+    process(clk, a, d, r, cs, cx, inpt0, inpt1, inpt2, inpt3, inpt45_len, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2, floating_bus)
     begin
         if (r = '1') and (cs = '1') then
-            do(5 downto 0) <= "000000";
+            d(5 downto 0) <= floating_bus(5 downto 0);
+
             case a(3 downto 0) is
                 when A_CXM0P =>
-                    do(7 downto 6) <= cx(1 downto 0);
+                    d(7 downto 6) <= cx(1 downto 0);
                 when A_CXM1P =>
-                    do(7 downto 6) <= cx(3 downto 2);
+                    d(7 downto 6) <= cx(3 downto 2);
                 when A_CXP0FB =>
-                    do(7 downto 6) <= cx(5 downto 4);
+                    d(7 downto 6) <= cx(5 downto 4);
                 when A_CXP1FB =>
-                    do(7 downto 6) <= cx(7 downto 6);
+                    d(7 downto 6) <= cx(7 downto 6);
                 when A_CXM0FB =>
-                    do(7 downto 6) <= cx(9 downto 8);
+                    d(7 downto 6) <= cx(9 downto 8);
                 when A_CXM1FB =>
-                    do(7 downto 6) <= cx(11 downto 10);
+                    d(7 downto 6) <= cx(11 downto 10);
                 when A_CXBLPF =>
-                    do(7) <= cx(12);
-                    do(6) <= '1';
+                    d(7) <= cx(12);
+                    d(6) <= floating_bus(6);
                 when A_CXPPMM =>
-                    do(7 downto 6) <= cx(14 downto 13);
-					 when A_INPT0 =>
-						  if(paddle_ena1 = '1') then
-								do(7) <= inpt0;
-						  else
-						 		do(7) <= '1';
-						  end if;
-                    do(6) <= '0';
+                    d(7 downto 6) <= cx(14 downto 13);
+                when A_INPT0 =>
+                    if(paddle_ena1 = '1') then
+                        d(7) <= inpt0;
+                    else
+                        d(7) <= '1';
+                    end if;
+                    d(6) <= '0';
                 when A_INPT1 =>
-						  if(paddle_ena1 = '1') then
-								do(7) <= inpt1;
-						  else
-						 		do(7) <= '1';
-						  end if;
-                    do(6) <= '0';
+                    if(paddle_ena1 = '1') then
+                        d(7) <= inpt1;
+                    else
+                        d(7) <= '1';
+                    end if;
+                    d(6) <= '0';
                 when A_INPT2 =>
-						  if(paddle_ena2 = '1') then
-								do(7) <= inpt2;
-						  else
-						 		do(7) <= '1';
-						  end if;
-                    do(6) <= '0';
+                    if(paddle_ena2 = '1') then
+                        d(7) <= inpt2;
+                    else
+                        d(7) <= '1';
+                    end if;
+                    d(6) <= '0';
                 when A_INPT3 =>
-						  if(paddle_ena2 = '1') then
-								do(7) <= inpt3;
-						  else
-						 		do(7) <= '1';
-						  end if;
-                    do(6) <= '0';
+                    if(paddle_ena2 = '1') then
+                        d(7) <= inpt3;
+                    else
+                        d(7) <= '1';
+                    end if;
+                    d(6) <= '0';
                 when A_INPT4 =>
                     if (inpt45_len = '1') then
-                        do(7) <= inpt4_l;
+                        d(7) <= inpt4_l;
                     else
-                        do(7) <= inpt4;
+                        d(7) <= inpt4;
                     end if;
                     --d(6) <= 'Z';
-                    do(6) <= '0';
+                    d(6) <= '0';
                 when A_INPT5 =>
                     if (inpt45_len = '1') then
-                        do(7) <= inpt5_l;
+                        d(7) <= inpt5_l;
                     else
-                        do(7) <= inpt5;
+                        d(7) <= inpt5;
                     end if;
                     --d(6) <= 'Z';
-                    do(6) <= '0';
+                    d(6) <= '0';
                 when others =>
-                    do(7 downto 6) <= "11";
+                    d(7 downto 6) <= "--";
             end case;
         else
-            do <= x"FF";
+            d <= "ZZZZZZZZ";
         end if;
 
-        if rising_edge(clk) then
+        if (clk'event and clk = '1') then
+            if cs = '0' then
+                floating_bus <= d;
+            end if;
+
             phi2_d <= phi2;
+            -- phi2_en doesn't work well here
             if (r = '0') and (cs = '1') and (phi2_d = '0' and phi2 = '1') then
                 case a is
                     when A_VSYNC =>
-                        vsync <= di(1);
+                        vsync <= d(1);
                     when A_VBLANK =>
-                        inpt03_chg <= di(7);
-                        inpt45_len <= di(6);
-                        vblank <= di(1);
+                        inpt03_chg <= d(7);
+                        inpt45_len <= d(6);
+                        vblank <= d(1);
                     when A_PF0 =>
-                        pf_gr(3 downto 0) <= di(7 downto 4);
+                        pf_gr(3 downto 0) <= d(7 downto 4);
                     when A_PF1 =>
-                        pf_gr(11 downto 4) <= di;
+                        pf_gr(11 downto 4) <= d;
                     when A_PF2 =>
-                        pf_gr(19 downto 12) <= di;
+                        pf_gr(19 downto 12) <= d;
                     when A_CTRLPF =>
-                        pf_reflect <= di(0);
-                        pf_priority <= di(2);
-                        bl_size <= di(5 downto 4);
+                        pf_reflect <= d(0);
+                        pf_score <= d(1);
+                        pf_priority <= d(2);
+                        bl_size <= d(5 downto 4);
                     when A_NUSIZ0 =>
-                        p0_nusiz <= di(2 downto 0);
-                        m0_size <= di(5 downto 4);
+                        p0_nusiz <= d(2 downto 0);
+                        m0_size <= d(5 downto 4);
                     when A_NUSIZ1 =>
-                        p1_nusiz <= di(2 downto 0);
-                        m1_size <= di(5 downto 4);
+                        p1_nusiz <= d(2 downto 0);
+                        m1_size <= d(5 downto 4);
                     when A_HMCLR =>
                         p0_hmove <= "0000";
                         p1_hmove <= "0000";
@@ -964,71 +1028,73 @@ begin
                         m1_hmove <= "0000";
                         bl_hmove <= "0000";
                     when A_HMP0 =>
-                        p0_hmove <= di(7 downto 4);
+                        p0_hmove <= d(7 downto 4);
                     when A_HMP1 =>
-                        p1_hmove <= di(7 downto 4);
+                        p1_hmove <= d(7 downto 4);
                     when A_HMM0 =>
-                        m0_hmove <= di(7 downto 4);
+                        m0_hmove <= d(7 downto 4);
                     when A_HMM1 =>
-                        m1_hmove <= di(7 downto 4);
+                        m1_hmove <= d(7 downto 4);
                     when A_HMBL =>
-                        bl_hmove <= di(7 downto 4);
+                        bl_hmove <= d(7 downto 4);
                     when A_ENAM0 =>
-                        m0_enable <= di(1);
+                        m0_enable <= d(1);
                     when A_ENAM1 =>
-                        m1_enable <= di(1);
+                        m1_enable <= d(1);
                     when A_ENABL =>
-                        bl_ennew <= di(1);
+                        bl_ennew <= d(1);
                     when A_GRP0 =>
                         p1_grpold <= p1_grpnew;
-                        p0_grpnew <= di;
+                        p0_grpnew <= d;
                     when A_GRP1 =>
                         bl_enold <= bl_ennew;
                         p0_grpold <= p0_grpnew;
-                        p1_grpnew <= di;
+                        p1_grpnew <= d;
                     when A_REFP0 =>
-                        p0_reflect <= di(3);
+                        p0_reflect <= d(3);
                     when A_REFP1 =>
-                        p1_reflect <= di(3);
+                        p1_reflect <= d(3);
                     when A_VDELP0 =>
-                        p0_vdel <= di(0);
+                        p0_vdel <= d(0);
                     when A_VDELP1 =>
-                        p1_vdel <= di(0);
+                        p1_vdel <= d(0);
                     when A_VDELBL =>
-                        bl_vdel <= di(0);
+                        bl_vdel <= d(0);
                     when A_COLUP0 =>
-                        p0_colu <= di(7 downto 1);
+                        p0_colu <= d(7 downto 1);
                     when A_COLUP1 =>
-                        p1_colu <= di(7 downto 1);
+                        p1_colu <= d(7 downto 1);
                     when A_COLUPF =>
-                        pf_colu <= di(7 downto 1);
+                        pf_colu <= d(7 downto 1);
                     when A_COLUBK =>
-                        bk_colu <= di(7 downto 1);
+                        bk_colu <= d(7 downto 1);
                     when A_AUDF0 =>
-                        a0_freq <= di(4 downto 0);
+                        a0_freq <= d(4 downto 0);
                     when A_AUDF1 =>
-                        a1_freq <= di(4 downto 0);
+                        a1_freq <= d(4 downto 0);
                     when A_AUDC0 =>
-                        a0_ctrl <= di(3 downto 0);
+                        a0_ctrl <= d(3 downto 0);
                     when A_AUDC1 =>
-                        a1_ctrl <= di(3 downto 0);
+                        a1_ctrl <= d(3 downto 0);
                     when A_AUDV0 =>
-                        a0_vol <= di(3 downto 0);
+                        a0_vol <= d(3 downto 0);
                     when A_AUDV1 =>
-                        a1_vol <= di(3 downto 0);
+                        a1_vol <= d(3 downto 0);
                     when A_RESMP0 =>
-                        m0_resp0 <= di(1);
+                        m0_resp0 <= d(1);
                     when A_RESMP1 =>
-                        m1_resp1 <= di(1);
+                        m1_resp1 <= d(1);
                     when others => null;
                 end case;
             end if;
         end if;
     end process;
 
-    output: process(clk)
+    output: process(
+        clk, hblank, pf_priority, p0_pix, p1_pix, m0_pix, m1_pix,
+        bl_pix, pf_pix, p0_colu, p1_colu, pf_colu, bk_colu)
     begin
-        if rising_edge(clk) then
+        if (clk = '1' and clk'event) then
             if (hblank = '1' or vblank = '1') then
                 int_colu <= "0000000";
             elsif (pf_priority = '0') then
@@ -1036,14 +1102,34 @@ begin
                     int_colu <= p0_colu;
                 elsif (p1_pix = '1' or m1_pix = '1') then
                     int_colu <= p1_colu;
-                elsif (pf_pix = '1' or bl_pix = '1') then
-                    int_colu <= pf_colu;
+                elsif (bl_pix = '1') then
+                  int_colu <= pf_colu;
+                elsif (pf_pix = '1') then
+                    if pf_score = '1' then
+                        if center = '0' then
+                            int_colu <= p0_colu;
+                        else
+                            int_colu <= p1_colu;
+                        end if;
+                    else
+                        int_colu <= pf_colu;
+                    end if;
                 else
 --                    int_colu <= "0110010";
                     int_colu <= bk_colu;
                 end if;
             else
-                if (pf_pix = '1' or bl_pix = '1') then
+                if (pf_pix = '1') then
+                    if pf_score = '1' then
+                        if center = '0' then
+                            int_colu <= p0_colu;
+                        else
+                            int_colu <= p1_colu;
+                        end if;
+                    else
+                        int_colu <= pf_colu;
+                    end if;
+                elsif (bl_pix = '1') then
                     int_colu <= pf_colu;
                 elsif (p0_pix = '1' or m0_pix = '1') then
                     int_colu <= p0_colu;
@@ -1059,9 +1145,9 @@ begin
 
     colu <= int_colu;
 
-    sec_delay: process(clk)
+    sec_delay: process(clk, r)
     begin
-        if rising_edge(clk) then
+        if (clk'event and clk = '1') then
             if (hmove_set = '1') then
                 sec_dl(1) <= '1';
             elsif (sec = '1') then
@@ -1078,10 +1164,10 @@ begin
 
     hmove_cntr_sl <= std_logic_vector(hmove_cntr);
 
-    motion: process(clk)
+    motion: process(clk, r, hmove_set)
     begin
 
-        if rising_edge(clk) then
+        if (clk'event and clk = '1') then
             if (hh0 = '1') then
                 if (sec = '1') then
                     hmove_cntr <= hmove_cntr + 1;
@@ -1129,12 +1215,12 @@ begin
         end if;
     end process;
 
-    collision: process(clk)
+    collision: process(clk, cx_clr)
     begin
-        if rising_edge(clk) then
+        if (clk'event and clk = '1') then
             if (cx_clr = '1') then
                 cx <= "000000000000000";
-            else
+            elsif hblank = '0' and vblank = '0' then
                 if (m0_pix = '1' and p0_pix = '1') then
                     cx(0) <= '1';
                 end if;
@@ -1186,11 +1272,15 @@ begin
 
     ph0 <= phi0;
     ph2 <= phi2;
+    ph0_en <= phi0_en;
+    ph2_en <= phi2_en;
 
     process(clk)
     begin
-        if rising_edge(clk) then
+        if (clk'event and clk = '1') then
             phi2<=phi0;
+            phi0_en <= '0';
+            phi2_en <= phi0_en;
             if (h_lfsr_out = "010100" and hh1_edge = '1') then
                 clk_dvdr <= "01";
                 phi0 <= '0';
@@ -1201,6 +1291,7 @@ begin
                         phi0 <= '0';
                     when "01" =>
                         clk_dvdr <= "11";
+                        phi0_en <= '1';
                         phi0 <= '0';
                     when "11" =>
                         clk_dvdr <= "00";
@@ -1212,30 +1303,33 @@ begin
         end if;
     end process;
 
-	process(clk, inpt45_rst, inpt45_len, inpt4, inpt5)
-	begin
-		if rising_edge(clk) then
-			if (inpt45_rst = '1') then
-				inpt4_l <= '1';
-				inpt5_l <= '1';
-			elsif (inpt45_len = '1') then
-				if (inpt4 = '0') then
-					inpt4_l <= '0';
-				end if;
-				if (inpt5 = '0') then
-					inpt5_l <= '0';
-				end if;
-			end if;
-		end if;
-	end process;
+    process(clk, inpt45_rst, inpt45_len, inpt4, inpt5)
+    begin
+        if (clk'event and clk = '1') then
+            if (inpt45_rst = '1') then
+                inpt4_l <= '1';
+                inpt5_l <= '1';
+            elsif (inpt45_len = '1') then
+                if (inpt4 = '0') then
+                    inpt4_l <= '0';
+                end if;
+                if (inpt5 = '0') then
+                    inpt5_l <= '0';
+                end if;
+            end if;
+        end if;
+    end process;
 
-	
-	Inst_VGAColorTable: work.VGAColorTable PORT MAP(
-		clk => clk,
-		lum => '0' & int_colu(2 downto 0),
-		hue => int_colu(6 downto 3),
-		mode => '0' & pal,	-- 00 = NTSC, 01 = PAL
-		outColor => rgbx2
-	);	
-	
+    --sync <= hsync xor vsync;
+    --blank <= hblank or vblank;
+
+    vga_colu <= int_colu;
+        Inst_VGAColorTable: work.VGAColorTable PORT MAP(
+            clk => vid_clk,
+            lum => '0' & vga_colu(2 downto 0),
+            hue => vga_colu(6 downto 3),
+            mode => '0' & pal,-- 00 = NTSC, 01 = PAL
+            outColor => rgbx2
+            );
+
 end arch;
