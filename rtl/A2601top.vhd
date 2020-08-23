@@ -314,6 +314,8 @@ begin
 
 	elsif (bss = BANKP2 and cpu_a >= "1" & x"038" and cpu_a <= "1" & x"03f") then -- DPC READ -  0x1038 to 0x103f (Flags)
 		cpu_d <= DpcFlags(to_integer(unsigned(cpu_a(2 downto 0))));
+	elsif (bss = BANKP2 and cpu_a >= "1" & x"040" and cpu_a <= "1" & x"07f") then
+		cpu_d <= "ZZZZZZZZ";
 
 	elsif bss = BANKCV and cpu_a(12 downto 10) = "100" then
 		cpu_d <= sc_d_out;
