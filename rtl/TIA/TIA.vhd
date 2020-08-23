@@ -579,7 +579,7 @@ begin
         i(17) when "10001",
         i(18) when "10010",
         i(19) when "10011",
-        '-' when others;
+        '-' when others;            
 
 end arch;
 
@@ -1090,55 +1090,27 @@ begin
         end if;
     end process;
 
-    output: process(
-        clk, hblank, pf_priority, p0_pix, p1_pix, m0_pix, m1_pix,
-        bl_pix, pf_pix, p0_colu, p1_colu, pf_colu, bk_colu)
+    output: process(clk)
     begin
         if (clk = '1' and clk'event) then
             if (hblank = '1' or vblank = '1') then
                 int_colu <= "0000000";
-            elsif (pf_priority = '0') then
-                if (p0_pix = '1' or m0_pix = '1') then
+            elsif (pf_priority = '1' and (pf_pix = '1' or bl_pix = '1')) then
+                int_colu <= pf_colu;
+            elsif (pf_score = '1' and pf_pix = '1') then
+                if center = '0' then
                     int_colu <= p0_colu;
-                elsif (p1_pix = '1' or m1_pix = '1') then
-                    int_colu <= p1_colu;
-                elsif (bl_pix = '1') then
-                  int_colu <= pf_colu;
-                elsif (pf_pix = '1') then
-                    if pf_score = '1' then
-                        if center = '0' then
-                            int_colu <= p0_colu;
-                        else
-                            int_colu <= p1_colu;
-                        end if;
-                    else
-                        int_colu <= pf_colu;
-                    end if;
                 else
---                    int_colu <= "0110010";
-                    int_colu <= bk_colu;
+                    int_colu <= p1_colu;
                 end if;
+            elsif (p0_pix = '1' or m0_pix = '1') then
+                int_colu <= p0_colu;
+            elsif (p1_pix = '1' or m1_pix = '1') then
+                int_colu <= p1_colu;
+            elsif (pf_pix = '1' or bl_pix = '1') then
+                int_colu <= pf_colu;
             else
-                if (pf_pix = '1') then
-                    if pf_score = '1' then
-                        if center = '0' then
-                            int_colu <= p0_colu;
-                        else
-                            int_colu <= p1_colu;
-                        end if;
-                    else
-                        int_colu <= pf_colu;
-                    end if;
-                elsif (bl_pix = '1') then
-                    int_colu <= pf_colu;
-                elsif (p0_pix = '1' or m0_pix = '1') then
-                    int_colu <= p0_colu;
-                elsif (p1_pix = '1' or m1_pix = '1') then
-                    int_colu <= p1_colu;
-                else
---                    int_colu <= "0110010";
-                    int_colu <= bk_colu;
-                end if;
+                int_colu <= bk_colu;
             end if;
         end if;
     end process;
