@@ -357,7 +357,7 @@ tf_bank <= bank(1 downto 0) when (cpu_a(11) = '0') else "11";
 
 rom_a <= "000" & e0_bank & cpu_a(9 downto 0)  when bss = BANKE0 else
          "000" & tf_bank & cpu_a(10 downto 0) when bss = BANK3F else
-         "00100" & std_logic_vector(2047 - DpcCounters(to_integer(unsigned(cpu_a(2 downto 0))))(10 downto 0))
+         "00100" & std_logic_vector(not DpcCounters(to_integer(unsigned(cpu_a(2 downto 0))))(10 downto 0))
                                               when bss = BANKP2 and cpu_a >= "1" & x"008" and cpu_a <= "1" & x"017" else
          "00000" & cpu_a(10 downto 0)         when bss = BANKCV else
          "00000" & cpu_a(10 downto 0)         when bss = BANK2K else
@@ -369,6 +369,7 @@ rom_a <= "000" & e0_bank & cpu_a(9 downto 0)  when bss = BANKE0 else
 bankswch: process(clk)
 	variable w_index_v :integer; 
 	variable addr_v :std_logic_vector(12 downto 0); 
+	variable DpcCounterNext: std_logic_vector(10 downto 0);
 begin
     if rising_edge(clk) then
 		if ph0_en = '1' then
@@ -437,53 +438,40 @@ begin
 							if (cpu_a(12) = '1' ) then -- A12 - HIGH
 								w_index_v := to_integer(unsigned(cpu_a(2 downto 0)));
 								if (cpu_a(12 downto 6) = "1000000") then -- DPC READ - 0x1000 to 0x103F (1 0000 0000 0000 to 1 0000 0011 1111)
-									-- Update flag register for selected data fetcher
-									if (DpcCounters(w_index_v)(7 downto 0) = DpcTops(w_index_v)) then
-										DpcFlags(w_index_v) <= x"ff";
-									elsif (DpcCounters(w_index_v)(7 downto 0) = DpcBottoms(w_index_v)) then
-										DpcFlags(w_index_v) <= x"00";
-									end if;
-	
+
 									case cpu_a(5 downto 3)  is
 										when "000" =>  -- 0x1000 to 0x1007 - random number and music fetcher
 											if(cpu_a(2) = '0') then -- 0x1000 to 0x1003
 												-- random number read
 												DpcRandom <= DpcRandom(6 downto 0) & (not(DpcRandom(7) xor DpcRandom(5) xor DpcRandom(4) xor DpcRandom(3)));
-												--resultDPC <= DpcRandom;
-											--	else -- 0x1004 to 0x1007
-												-- sound
-												--ampI_v := "000";
-												--
-												--masked0_v := DpcMusicModes(0) and DpcMusicFlags(0);
-												--if (masked0_v /= x"00") then ampI_v(0) := '1'; end if;
-												--
-												--masked1_v := DpcMusicModes(1) and DpcMusicFlags(1);
-												--if (masked1_v /= x"00") then ampI_v(1) := '1'; end if;
-												--
-												--masked2_v := DpcMusicModes(2) and DpcMusicFlags(2);
-												--if (masked2_v /= x"00") then ampI_v(2) := '1'; end if;
-												--
-												--resultDPC <= soundAmplitudes(to_integer(unsigned(ampI_v)));
 											end if;
-										--when "001" =>  -- 0x1008 to 0x100f - Graphics read
-											--DpcDisplayPtr <= "100" & std_logic_vector(2047 - DpcCounters(w_index_v)(10 downto 0));
-										--when "010" =>  -- 0x1010 to 0x1017 - Graphics read (ANDed with flag)
-											--DpcDisplayPtr <= "100" & std_logic_vector(2047 - DpcCounters(w_index_v)(10 downto 0));-- and DpcFlags(w_index_v));
-										--when "111" =>  -- 0x1038 to 0x103f - Return the current flag value
-											--resultDPC <= DpcFlags(w_index_v);
 										when others => NULL;
 									end case;
 	
 									-- Clock the selected data fetcher's counter if needed
+                                    DpcCounterNext := DpcCounters(w_index_v);
 									if (w_index_v < 5 or (w_index_v >= 5 and DpcMusicModes(5 - w_index_v)(4) = '1')) then
-										DpcCounters(w_index_v) <= DpcCounters(w_index_v) - 1;
+										DpcCounterNext := DpcCounters(w_index_v) - 1;
 									end if;
+
+									DpcCounters(w_index_v) <= DpcCounterNext;
+									-- Update flag register for selected data fetcher
+									if (DpcCounterNext(7 downto 0) = DpcTops(w_index_v)) then
+										 DpcFlags(w_index_v) <= x"ff";
+									elsif (DpcCounterNext(7 downto 0) = DpcBottoms(w_index_v)) then
+										 DpcFlags(w_index_v) <= x"00";
+									end if;
+
 								elsif (cpu_a(12 downto 6) = "1000001") then -- DPC WRITE - 0x1040 to 0x107F (1 0000 0100 0000 to 1 0000 0111 1111)
 									case cpu_a(5 downto 3)  is
 										when "000" => --0x1040 to 0x1047
 											-- DFx top count
 											DpcTops(w_index_v) <= cpu_d;
-											DpcFlags(w_index_v) <= x"00";
+                                            if (DpcCounters(w_index_v)(7 downto 0) = cpu_d) then
+                                                DpcFlags(w_index_v) <= x"ff";
+                                            else
+												DpcFlags(w_index_v) <= x"00";
+                                            end if;
 										when "001" => -- 0x1048 to 0x104F
 											-- DFx bottom count
 											DpcBottoms(w_index_v) <= cpu_d;
