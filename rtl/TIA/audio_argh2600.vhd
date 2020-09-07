@@ -95,7 +95,7 @@ begin
 							else '0';
 
 	div31_edge <= '1' when lfsr5 = "11111" or lfsr5 = "10000" else '0';
-	div6_edge  <= '1' when cnt3 = "10" else '0';
+	div6_edge  <= '1' when cnt3_ena = '1' and cnt3_next = "10" else '0';
 
 
 	-- The Audio Control register generates and manipulates a pulse wave to create complex pulses or noise. The following table (with designed duplicates) explains how its tones are generated:
