@@ -140,6 +140,12 @@ assign BUTTONS   = 0;
 assign VIDEO_ARX = status[8] ? 8'd16 : 8'd4;
 assign VIDEO_ARY = status[8] ? 8'd9  : 8'd3; 
 
+// Status Bit Map:
+// 0         1         2         3
+// 01234567890123456789012345678901
+// 0123456789ABCDEFGHIJKLMNOPQRSTUV
+// XXXXXXXXXXXXX  X
+
 `include "build_id.v" 
 localparam CONF_STR = {
 	"ATARI2600;;",
@@ -148,6 +154,7 @@ localparam CONF_STR = {
 	"-;",
 	"O1,Colors,NTSC,PAL;",
 	"O2,Video mode,Color,Mono;",
+	"OC,VBlank,Regenerate,Original;",
 	"O8,Aspect ratio,4:3,16:9;", 
 	"O57,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
@@ -312,7 +319,7 @@ A2601top A2601top
 	.O_VSYNC(vs),
 	.O_HSYNC(hs),
 	.O_HBLANK(HBlank),
-	.O_VBLANK(VBlank),
+	.O_VBLANK(vb),
 	.O_VIDEO_R(R),
 	.O_VIDEO_G(G),
 	.O_VIDEO_B(B),
@@ -356,11 +363,11 @@ A2601top A2601top
 
 wire [7:0] R,G,B;
 wire hs, vs;
-reg  HSync;
-wire HBlank, VBlank;
-reg  vs_g, vs_o, vs_gen;
-
-wire VSync = vs_gen ? vs_g : vs_o;
+reg  HSync, VSync;
+wire HBlank;
+wire VBlank = status[12] ? vb : vbl_gen;
+wire vb;
+reg  vbl_gen;
 /*
 always @(posedge CLK_VIDEO) begin
 	reg       old_vbl;
@@ -382,17 +389,25 @@ end
 */
 
 always @(posedge clk_sys) begin
-	reg       old_vbl;
-	reg [7:0] vbl;
-	
+	reg [8:0] line_cnt, vblank_start;
+
 	HSync <= hs;
 	if(~HSync & hs) begin
-		old_vbl <= VBlank;
-		vs_o <= vs;
+		VSync <= vs;
+		line_cnt <= line_cnt + 1'b1;
 
-		{vs_g,vbl} <= {vbl,1'b0};
-		if(~old_vbl & VBlank) vbl <= 8'b00111000;
-		if (~vs_o & vs) vs_gen <= ~VBlank;
+		if (~VSync & vs) begin
+			line_cnt <= 0;
+			vblank_start <= line_cnt - 9'd25;
+		end
+
+		if (line_cnt == vblank_start) begin
+			vbl_gen <= 1'b1;
+		end
+
+		if (line_cnt == 9'd34) begin
+			vbl_gen <= 0;
+		end
 	end
 end
 
