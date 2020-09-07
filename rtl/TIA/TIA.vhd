@@ -650,6 +650,7 @@ architecture arch of TIA is
     signal p0_vdel: std_logic := '0';
     signal p0_pix: std_logic;
     signal p0_colu: std_logic_vector(6 downto 0) := "0000000";
+    signal p0_colu_reg: std_logic_vector(6 downto 0) := "0000000";
     signal p0_hmove: std_logic_vector(3 downto 0);
     signal p0_count: std_logic;
     signal p0_ec: std_logic := '0';
@@ -663,6 +664,7 @@ architecture arch of TIA is
     signal p1_vdel: std_logic := '0';
     signal p1_pix: std_logic;
     signal p1_colu: std_logic_vector(6 downto 0) := "0000000";
+    signal p1_colu_reg: std_logic_vector(6 downto 0) := "0000000";
     signal p1_hmove: std_logic_vector(3 downto 0);
     signal p1_count: std_logic;
     signal p1_ec: std_logic := '0';
@@ -705,8 +707,10 @@ architecture arch of TIA is
     signal pf_score: std_logic;
     signal pf_priority: std_logic := '0';
     signal pf_colu: std_logic_vector(6 downto 0) := "0000000";
+    signal pf_colu_reg: std_logic_vector(6 downto 0) := "0000000";
 
     signal bk_colu: std_logic_vector(6 downto 0) := "0000000";
+    signal bk_colu_reg: std_logic_vector(6 downto 0) := "0000000";
 
     signal a0_freq: std_logic_vector(4 downto 0);
     signal a0_ctrl: std_logic_vector(3 downto 0);
@@ -915,7 +919,8 @@ begin
 
     inpt45_rst <= '1' when (a = A_VBLANK) and (r = '0') and (cs = '1') else '0';
 
-    process(clk, a, d, r, cs, cx, inpt0, inpt1, inpt2, inpt3, inpt45_len, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2, floating_bus)
+    process(clk, a, d, r, cs, cx, inpt0, inpt1, inpt2, inpt3, inpt45_len, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2, floating_bus,
+            p0_colu_reg, p1_colu_reg, pf_colu_reg, bk_colu_reg, phi2)
     begin
         if (r = '1') and (cs = '1') then
             d(5 downto 0) <= floating_bus(5 downto 0);
@@ -989,13 +994,37 @@ begin
             d <= "ZZZZZZZZ";
         end if;
 
+        -- latch the color registers immediately
+        p0_colu <= p0_colu_reg;
+        p1_colu <= p1_colu_reg;
+        pf_colu <= pf_colu_reg;
+        bk_colu <= bk_colu_reg;
+        if (r = '0') and (cs = '1') and (phi2 = '1') then
+            case a is
+                when A_COLUP0 =>
+                    p0_colu <= d(7 downto 1);
+                when A_COLUP1 =>
+                    p1_colu <= d(7 downto 1);
+                when A_COLUPF =>
+                    pf_colu <= d(7 downto 1);
+                when A_COLUBK =>
+                    bk_colu <= d(7 downto 1);
+                when others => null;
+            end case;
+        end if;
+
         if (clk'event and clk = '1') then
+            p0_colu_reg <= p0_colu;
+            p1_colu_reg <= p1_colu;
+            pf_colu_reg <= pf_colu;
+            bk_colu_reg <= bk_colu;
+
             if cs = '0' then
                 floating_bus <= d;
             end if;
 
             phi2_d <= phi2;
-            -- phi2_en doesn't work well here
+            -- latch when phi2 is high
             if (r = '0') and (cs = '1') and (phi2_d = '0' and phi2 = '1') then
                 case a is
                     when A_VSYNC =>
@@ -1060,14 +1089,6 @@ begin
                         p1_vdel <= d(0);
                     when A_VDELBL =>
                         bl_vdel <= d(0);
-                    when A_COLUP0 =>
-                        p0_colu <= d(7 downto 1);
-                    when A_COLUP1 =>
-                        p1_colu <= d(7 downto 1);
-                    when A_COLUPF =>
-                        pf_colu <= d(7 downto 1);
-                    when A_COLUBK =>
-                        bk_colu <= d(7 downto 1);
                     when A_AUDF0 =>
                         a0_freq <= d(4 downto 0);
                     when A_AUDF1 =>
