@@ -165,9 +165,9 @@ localparam CONF_STR = {
 	"OB,Invert Paddle,No,Yes;",
 	"-;",
 	"R0,Reset;",
-	"J1,Fire,Stick Btn,Paddle Btn,Game Reset,Game Select;",
-	"jn,A,B,X|P,Start,Select;",
-	"jp,A,B,X|P,Start,Select;",
+	"J1,Fire,Stick Btn,Paddle Btn,Game Reset,Game Select,Pause;",
+	"jn,A,B,X|P,Start,Select,L;",
+	"jp,A,B,X|P,Start,Select,L;",
 	"V,v",`BUILD_DATE
 };
 
@@ -357,6 +357,8 @@ A2601top A2601top
 	.rom_a(rom_addr),
 	.rom_do(rom_data),
 
+	.pause(pause),
+
 	.pal(status[1]),
 	.p_dif(status[4:3])
 );
@@ -501,6 +503,20 @@ paddle_ctl p4
 	.b_out(p_4),
 	.a_out(paddle_4)
 );
+
+wire pause_btn = joy_0[9] | joy_1[9] | joy_2[9] | joy_3[9];
+
+reg pause = 0;
+always @(posedge clk_cpu) begin
+	reg old_p2,old_p1;
+	
+	old_p1 <= pause_btn;
+	old_p2 <= old_p1;
+	
+	if(~old_p2 & old_p1) pause <= ~pause;
+
+	if(reset) pause <= 0;
+end
 
 endmodule
 

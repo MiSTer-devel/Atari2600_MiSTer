@@ -84,6 +84,8 @@ entity A2601top is
 		rom_do    : in std_logic_vector(7 downto 0);
 		rom_size  : in std_logic_vector(16 downto 0);
 
+		pause     : in std_logic;
+
 		pal       : in std_logic;
 		p_dif     : in std_logic_vector(1 downto 0)
 	);
@@ -199,6 +201,7 @@ port map(
 	vid_clk     => vid_clk,
 	clk         => clk,
 	rst         => rst,
+	pause       => pause,
 	d           => cpu_d,
 	a           => cpu_a,
 	pa          => pa,

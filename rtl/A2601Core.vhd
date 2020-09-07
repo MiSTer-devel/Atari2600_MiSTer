@@ -25,6 +25,7 @@ entity A2601 is
 		vid_clk: in std_logic;
 		clk: in std_logic;
 		rst: in std_logic;
+		pause: in std_logic;
 		d: inout std_logic_vector(7 downto 0);
 		a: out std_logic_vector(12 downto 0);
 		r: out std_logic;
@@ -87,7 +88,7 @@ port map(
     clk     => clk,
     clk_en  => ph0_en,
     rst     => rst,
-    rdy     => rdy,
+    rdy     => rdy and not pause,
     d       => d,
     ad      => cpu_a,
     r       => read
