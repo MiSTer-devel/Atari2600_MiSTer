@@ -144,7 +144,7 @@ assign VIDEO_ARY = status[14] ? 8'd9  : status[13] ? 8'd108 : adaptive_ary;
 // 0         1         2         3
 // 01234567890123456789012345678901
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// XXXXXXXX XXXXXXX
+// XXXXXXXX XXXXXXXX
 
 `include "build_id.v" 
 localparam CONF_STR = {
@@ -155,6 +155,7 @@ localparam CONF_STR = {
 	"O1,Colors,NTSC,PAL;",
 	"O2,Video mode,Color,Mono;",
 	"OC,VBlank,Regenerate,Original;",
+	"OG,De-comb,Off,On;",
 	"ODE,Aspect ratio,Adaptive,Fixed,Wide;",
 	"O57,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
@@ -362,7 +363,8 @@ A2601top A2601top
 	.pause(pause),
 
 	.pal(status[1]),
-	.p_dif(status[4:3])
+	.p_dif(status[4:3]),
+	.decomb(status[16])
 );
 
 wire [7:0] R,G,B;

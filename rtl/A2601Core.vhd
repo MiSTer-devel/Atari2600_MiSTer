@@ -53,7 +53,8 @@ entity A2601 is
 		ph0_en_out: out std_logic;
 		ph2_out: out std_logic;
 		ph2_en_out: out std_logic;
-		pal: in std_logic
+		pal: in std_logic;
+		decomb: in std_logic
 	);
 end A2601;
 
@@ -139,7 +140,8 @@ port map(
 	inpt3      => inpt3,
 	inpt4      => inpt4,
 	inpt5      => inpt5,
-	pal        => pal
+	pal        => pal,
+	decomb     => decomb
 );
 
 tia_cs <= '1' when (cpu_a(12) = '0') and (cpu_a(7) = '0') else '0';

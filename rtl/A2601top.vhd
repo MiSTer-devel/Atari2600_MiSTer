@@ -89,7 +89,8 @@ entity A2601top is
 		pause     : in std_logic;
 
 		pal       : in std_logic;
-		p_dif     : in std_logic_vector(1 downto 0)
+		p_dif     : in std_logic_vector(1 downto 0);
+		decomb    : in std_logic
 	);
 end A2601top;
 
@@ -233,7 +234,8 @@ port map(
 	av0         => av0,
 	av1         => av1,
 	ph0_en_out  => ph0_en,
-	pal         => pal
+	pal         => pal,
+	decomb      => decomb
 );
 
 O_VIDEO_R <= rgbx2(23 downto 16);
