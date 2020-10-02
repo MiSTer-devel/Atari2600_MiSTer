@@ -53,12 +53,14 @@ entity A2601top is
 		p1_u      : in std_logic;
 		p1_d      : in std_logic;
 		p1_f      : in std_logic;
+		p1_f2     : in std_logic;
 
 		p2_l      : in std_logic;
 		p2_r      : in std_logic;
 		p2_u      : in std_logic;
 		p2_d      : in std_logic;
 		p2_f      : in std_logic;
+		p2_f2     : in std_logic;
 
 		p_1       : in std_logic;
 		paddle_1  : in std_logic_vector(7 downto 0);
@@ -166,6 +168,13 @@ signal bss:  bss_type := BANK00; 	--bank switching method
 signal paddle_ena12 : std_logic := '0';
 signal paddle_ena34 : std_logic := '0';
 
+signal inpt03_chg: std_logic;
+signal inpt0, pd0: std_logic;
+signal inpt1, pd1: std_logic;
+signal inpt2, pd2: std_logic;
+signal inpt3, pd3: std_logic;
+
+
 --- DPC signals
 type B3_type is array(2 downto 0) of std_logic_vector(7 downto 0);
 type B8_type is array(0 to 7) of std_logic_vector(7 downto 0);
@@ -206,12 +215,11 @@ port map(
 	a           => cpu_a,
 	pa          => pa,
 	pb          => pb,
-	paddle_0    => paddle_1,
-	paddle_1    => paddle_2,
-	paddle_ena1 => paddle_ena12,
-	paddle_2    => paddle_3,
-	paddle_3    => paddle_4,
-	paddle_ena2 => paddle_ena34,
+	inpt03_chg  => inpt03_chg,
+	inpt0       => inpt0,
+	inpt1       => inpt1,
+	inpt2       => inpt2,
+	inpt3       => inpt3,
 	inpt4       => inpt4,
 	inpt5       => inpt5,
 	colu        => open,
@@ -264,6 +272,15 @@ pb(0) <= p_start;
 pa(7 downto 4) <= p1_r & p1_l & p1_d & p1_u when paddle_ena12 = '0' else p_1 & p_2 & "11";
 pa(3 downto 0) <= p2_r & p2_l & p2_d & p2_u when paddle_ena34 = '0' else p_3 & p_4 & "11";
 
+paddle0: work.paddle port map(clk, hsyn, paddle_1, inpt03_chg, pd0);
+paddle1: work.paddle port map(clk, hsyn, paddle_2, inpt03_chg, pd1);
+paddle2: work.paddle port map(clk, hsyn, paddle_3, inpt03_chg, pd2);
+paddle3: work.paddle port map(clk, hsyn, paddle_4, inpt03_chg, pd3);
+
+inpt0 <= pd0 when paddle_ena12 = '1' else '1';
+inpt1 <= pd1 when paddle_ena12 = '1' else p1_f2;
+inpt2 <= pd2 when paddle_ena34 = '1' else '1';
+inpt3 <= pd3 when paddle_ena34 = '1' else p2_f2;
 inpt4 <= p1_f or paddle_ena12;
 inpt5 <= p2_f or paddle_ena34;
 

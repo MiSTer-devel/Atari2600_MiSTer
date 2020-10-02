@@ -613,12 +613,11 @@ entity TIA is
          au1: out std_logic;
          av0: out std_logic_vector(3 downto 0);
          av1: out std_logic_vector(3 downto 0);
-         paddle_0: in std_logic_vector(7 downto 0);
-         paddle_1: in std_logic_vector(7 downto 0);
-         paddle_ena1: in std_logic;
-         paddle_2: in std_logic_vector(7 downto 0);
-         paddle_3: in std_logic_vector(7 downto 0);
-         paddle_ena2: in std_logic;
+         inpt03_chg: out std_logic;
+         inpt0: in std_logic;
+         inpt1: in std_logic;
+         inpt2: in std_logic;
+         inpt3: in std_logic;
          inpt4: in std_logic;
          inpt5: in std_logic;
          pal: in std_logic := '0'
@@ -766,19 +765,9 @@ architecture arch of TIA is
 
     signal vga_colu: std_logic_vector(6 downto 0);
 
-    signal inpt03_chg: std_logic;
-    signal inpt0: std_logic;
-    signal inpt1: std_logic;
-    signal inpt2: std_logic;
-    signal inpt3: std_logic;
-
     signal floating_bus: std_logic_vector(7 downto 0);
 
 begin
-    paddle0: work.paddle port map(clk, hsync, paddle_0, inpt03_chg, inpt0);
-    paddle1: work.paddle port map(clk, hsync, paddle_1, inpt03_chg, inpt1);
-    paddle2: work.paddle port map(clk, hsync, paddle_2, inpt03_chg, inpt2);
-    paddle3: work.paddle port map(clk, hsync, paddle_3, inpt03_chg, inpt3);
 
     h_cntr: work.cntr2 port map(clk, h_cntr_rst, '1', h_cntr_out);
     lfsr: work.lfsr6 port map(clk, h_lfsr_rst, h_lfsr_cnt, h_lfsr_out);
@@ -919,7 +908,7 @@ begin
 
     inpt45_rst <= '1' when (a = A_VBLANK) and (r = '0') and (cs = '1') else '0';
 
-    process(clk, a, d, r, cs, cx, inpt0, inpt1, inpt2, inpt3, inpt45_len, inpt4_l, inpt4, inpt5_l, inpt5, paddle_ena1, paddle_ena2, floating_bus,
+    process(clk, a, d, r, cs, cx, inpt0, inpt1, inpt2, inpt3, inpt45_len, inpt4_l, inpt4, inpt5_l, inpt5, floating_bus,
             p0_colu_reg, p1_colu_reg, pf_colu_reg, bk_colu_reg, phi2)
     begin
         if (r = '1') and (cs = '1') then
@@ -944,32 +933,16 @@ begin
                 when A_CXPPMM =>
                     d(7 downto 6) <= cx(14 downto 13);
                 when A_INPT0 =>
-                    if(paddle_ena1 = '1') then
-                        d(7) <= inpt0;
-                    else
-                        d(7) <= '1';
-                    end if;
+                    d(7) <= inpt0;
                     d(6) <= '0';
                 when A_INPT1 =>
-                    if(paddle_ena1 = '1') then
-                        d(7) <= inpt1;
-                    else
-                        d(7) <= '1';
-                    end if;
+                    d(7) <= inpt1;
                     d(6) <= '0';
                 when A_INPT2 =>
-                    if(paddle_ena2 = '1') then
-                        d(7) <= inpt2;
-                    else
-                        d(7) <= '1';
-                    end if;
+                    d(7) <= inpt2;
                     d(6) <= '0';
                 when A_INPT3 =>
-                    if(paddle_ena2 = '1') then
-                        d(7) <= inpt3;
-                    else
-                        d(7) <= '1';
-                    end if;
+                    d(7) <= inpt3;
                     d(6) <= '0';
                 when A_INPT4 =>
                     if (inpt45_len = '1') then

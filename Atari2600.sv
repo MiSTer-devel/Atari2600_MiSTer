@@ -165,9 +165,9 @@ localparam CONF_STR = {
 	"OB,Invert Paddle,No,Yes;",
 	"-;",
 	"R0,Reset;",
-	"J1,Fire,Stick Btn,Paddle Btn,Game Reset,Game Select,Pause;",
-	"jn,A,B,X|P,Start,Select,L;",
-	"jp,A,B,X|P,Start,Select,L;",
+	"J1,Fire 1,Stick Btn,Paddle Btn,Game Reset,Game Select,Pause,Fire 2;",
+	"jn,A,B,X|P,Start,Select,L,Y;",
+	"jp,A,B,X|P,Start,Select,L,Y;",
 	"V,v",`BUILD_DATE
 };
 
@@ -329,12 +329,14 @@ A2601top A2601top
 	.p1_d(status[15] ? ~joy_1[2] : ~joy_0[2]),
 	.p1_u(status[15] ? ~joy_1[3] : ~joy_0[3]),
 	.p1_f(status[15] ? ~joy_1[4] : ~joy_0[4]),
+	.p1_f2(status[15]? ~joy_1[10]: ~joy_0[10]),
 
 	.p2_r(status[15] ? ~joy_0[0] : ~joy_1[0]),
 	.p2_l(status[15] ? ~joy_0[1] : ~joy_1[1]),
 	.p2_d(status[15] ? ~joy_0[2] : ~joy_1[2]),
 	.p2_u(status[15] ? ~joy_0[3] : ~joy_1[3]),
 	.p2_f(status[15] ? ~joy_0[4] : ~joy_1[4]),
+	.p2_f2(status[15]? ~joy_0[10]: ~joy_1[10]),
 
 	.p_1(status[15] ? ~p_2 : ~p_1),
 	.p_2(status[15] ? ~p_1 : ~p_2),
