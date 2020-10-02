@@ -137,14 +137,14 @@ assign LED_DISK  = 0;
 assign LED_POWER = 0;
 assign BUTTONS   = 0;
 
-assign VIDEO_ARX = status[8] ? 8'd16 : 8'd4;
-assign VIDEO_ARY = status[8] ? 8'd9  : 8'd3; 
+assign VIDEO_ARX = status[14] ? 8'd16 : 8'd154;
+assign VIDEO_ARY = status[14] ? 8'd9  : status[13] ? 8'd108 : adaptive_ary;
 
 // Status Bit Map:
 // 0         1         2         3
 // 01234567890123456789012345678901
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// XXXXXXXXXXXXX  X
+// XXXXXXXX XXXXXXX
 
 `include "build_id.v" 
 localparam CONF_STR = {
@@ -155,7 +155,7 @@ localparam CONF_STR = {
 	"O1,Colors,NTSC,PAL;",
 	"O2,Video mode,Color,Mono;",
 	"OC,VBlank,Regenerate,Original;",
-	"O8,Aspect ratio,4:3,16:9;", 
+	"ODE,Aspect ratio,Adaptive,Fixed,Wide;",
 	"O57,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
 	"O3,Difficulty P1,B,A;",
@@ -392,16 +392,61 @@ always @(posedge CLK_VIDEO) begin
 end
 */
 
+wire [7:0] vertical_ar_lut[256] = '{
+	8'h00, 8'h01, 8'h01, 8'h02, 8'h02, 8'h03, 8'h03, 8'h04,
+	8'h05, 8'h05, 8'h06, 8'h06, 8'h07, 8'h07, 8'h08, 8'h08,
+	8'h09, 8'h0A, 8'h0A, 8'h0B, 8'h0B, 8'h0C, 8'h0C, 8'h0D,
+	8'h0E, 8'h0E, 8'h0F, 8'h0F, 8'h10, 8'h10, 8'h11, 8'h11,
+	8'h12, 8'h13, 8'h13, 8'h14, 8'h14, 8'h15, 8'h15, 8'h16,
+	8'h17, 8'h17, 8'h18, 8'h18, 8'h19, 8'h19, 8'h1A, 8'h1A,
+	8'h1B, 8'h1C, 8'h1C, 8'h1D, 8'h1D, 8'h1E, 8'h1E, 8'h1F,
+	8'h1F, 8'h20, 8'h21, 8'h21, 8'h22, 8'h22, 8'h23, 8'h23,
+	8'h24, 8'h25, 8'h25, 8'h26, 8'h26, 8'h27, 8'h27, 8'h28,
+	8'h28, 8'h29, 8'h2A, 8'h2A, 8'h2B, 8'h2B, 8'h2C, 8'h2C,
+	8'h2D, 8'h2E, 8'h2E, 8'h2F, 8'h2F, 8'h30, 8'h30, 8'h31,
+	8'h31, 8'h32, 8'h33, 8'h33, 8'h34, 8'h34, 8'h35, 8'h35,
+	8'h36, 8'h37, 8'h37, 8'h38, 8'h38, 8'h39, 8'h39, 8'h3A,
+	8'h3B, 8'h3B, 8'h3C, 8'h3C, 8'h3D, 8'h3D, 8'h3E, 8'h3E,
+	8'h3F, 8'h40, 8'h40, 8'h41, 8'h41, 8'h42, 8'h42, 8'h43,
+	8'h44, 8'h44, 8'h45, 8'h45, 8'h46, 8'h46, 8'h47, 8'h47,
+	8'h48, 8'h49, 8'h49, 8'h4A, 8'h4A, 8'h4B, 8'h4B, 8'h4C,
+	8'h4D, 8'h4D, 8'h4E, 8'h4E, 8'h4F, 8'h4F, 8'h50, 8'h50,
+	8'h51, 8'h52, 8'h52, 8'h53, 8'h53, 8'h54, 8'h54, 8'h55,
+	8'h56, 8'h56, 8'h57, 8'h57, 8'h58, 8'h58, 8'h59, 8'h59,
+	8'h5A, 8'h5B, 8'h5B, 8'h5C, 8'h5C, 8'h5D, 8'h5D, 8'h5E,
+	8'h5E, 8'h5F, 8'h60, 8'h60, 8'h61, 8'h61, 8'h62, 8'h62,
+	8'h63, 8'h64, 8'h64, 8'h65, 8'h65, 8'h66, 8'h66, 8'h67,
+	8'h68, 8'h68, 8'h69, 8'h69, 8'h6A, 8'h6A, 8'h6B, 8'h6B,
+	8'h6C, 8'h6D, 8'h6D, 8'h6E, 8'h6E, 8'h6F, 8'h6F, 8'h70,
+	8'h71, 8'h71, 8'h72, 8'h72, 8'h73, 8'h73, 8'h74, 8'h74,
+	8'h75, 8'h76, 8'h76, 8'h77, 8'h77, 8'h78, 8'h78, 8'h79,
+	8'h7A, 8'h7A, 8'h7B, 8'h7B, 8'h7C, 8'h7C, 8'h7D, 8'h7D,
+	8'h7E, 8'h7F, 8'h7F, 8'h80, 8'h80, 8'h81, 8'h81, 8'h82,
+	8'h83, 8'h83, 8'h84, 8'h84, 8'h85, 8'h85, 8'h86, 8'h86,
+	8'h87, 8'h88, 8'h88, 8'h89, 8'h89, 8'h8A, 8'h8A, 8'h8B,
+	8'h8C, 8'h8C, 8'h8D, 8'h8D, 8'h8E, 8'h8E, 8'h8F, 8'h8F
+};
+
+reg [7:0] adaptive_ary = 8'd108;
+
 always @(posedge clk_sys) begin
-	reg [8:0] line_cnt, vblank_start;
+	reg [8:0] line_cnt, vblank_start, visible_cnt;
 
 	HSync <= hs;
 	if(~HSync & hs) begin
 		VSync <= vs;
 		line_cnt <= line_cnt + 1'b1;
+		if (~VBlank)
+			visible_cnt <= visible_cnt + 1'b1;
 
 		if (~VSync & vs) begin
 			line_cnt <= 0;
+			visible_cnt <= 0;
+			if (visible_cnt < 255)
+				adaptive_ary <= vertical_ar_lut[visible_cnt[7:0]];
+			else
+				adaptive_ary <= vertical_ar_lut[255];
+
 			vblank_start <= line_cnt - 9'd25;
 		end
 
