@@ -637,9 +637,7 @@ architecture arch of TIA is
     signal hsync: std_logic := '0';
     signal cburst: std_logic := '0';
     signal hblank: std_logic := '1';
-    signal blank_mask: std_logic := '1';
     signal hblank_out: std_logic := '1';
-    signal hblank_early: std_logic := '1';
     signal hmove: std_logic := '0';
     signal hmove_set: std_logic;
     signal hmove_cntr: unsigned(3 downto 0) := "1111";
@@ -810,20 +808,15 @@ begin
                         pf_cnt <= '1';
                     when "011100" =>
                         hblank <= hmove;
-                        hblank_early <= hmove;
                         ovblank <= vblank;
-                        blank_mask <= (not decomb and hmove);
                         hblank_out <= '0';
                     when "010111" =>
                         hblank <= '0';
-                        blank_mask <= '0';
-                        hblank_early <= '0';
                     when "101001" =>
                         center <= '0';
                     when "010100" =>
                         hblank_out <= '1';
                         hblank <= '1';
-                        blank_mask <= '1';
                         pf_cnt <= '0';
                     when "011000" =>
                         center <= '1';
@@ -1099,21 +1092,21 @@ begin
         if (clk = '1' and clk'event) then
             if (vblank = '1') then
                 int_colu <= "0000000";
-            elsif (blank_mask = '1') then
+            elsif (hblank = '1' and not (hblank_out = '0' and decomb = '1')) then
                 int_colu <= "0000000";
-            elsif (pf_priority = '1' and (pf_pix = '1' or (bl_pix = '1' and hblank_early = '0'))) then
+            elsif (pf_priority = '1' and (pf_pix = '1' or (bl_pix = '1' and hblank = '0'))) then
                 int_colu <= pf_colu;
-            elsif ((pf_score = '1' and pf_pix = '1') and hblank_early = '0') then
+            elsif ((pf_score = '1' and pf_pix = '1') and hblank = '0') then
                 if center = '0' then
                     int_colu <= p0_colu;
                 else
                     int_colu <= p1_colu;
                 end if;
-            elsif ((p0_pix = '1' or m0_pix = '1') and hblank_early = '0') then
+            elsif ((p0_pix = '1' or m0_pix = '1') and hblank = '0') then
                 int_colu <= p0_colu;
-            elsif ((p1_pix = '1' or m1_pix = '1') and hblank_early = '0') then
+            elsif ((p1_pix = '1' or m1_pix = '1') and hblank = '0') then
                 int_colu <= p1_colu;
-            elsif (pf_pix = '1' or (bl_pix = '1' and hblank_early = '0')) then
+            elsif (pf_pix = '1' or (bl_pix = '1' and hblank = '0')) then
                 int_colu <= pf_colu;
             else
                 int_colu <= bk_colu;
