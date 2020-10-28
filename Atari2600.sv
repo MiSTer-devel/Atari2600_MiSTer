@@ -168,7 +168,7 @@ localparam CONF_STR = {
 	"OB,Invert Paddle,No,Yes;",
 	"-;",
 	"R0,Reset;",
-	"J1,Fire 1,Stick Btn,Paddle Btn,Game Reset,Game Select,Pause,Fire 2;",
+	"J1,Fire 1,Stick Btn,Paddle Btn,Game Reset,Game Select,Pause,Fire 2,Switch B/W,P1 difficulty,P2 difficulty;",
 	"jn,A,B,X|P,Start,Select,L,Y;",
 	"jp,A,B,X|P,Start,Select,L,Y;",
 	"V,v",`BUILD_DATE
@@ -208,6 +208,9 @@ wire [15:0] joya_0,joya_1,joya_2,joya_3;
 wire  [7:0] pd_0,pd_1,pd_2,pd_3;
 wire  [1:0] buttons;
 wire [31:0] status;
+reg  [31:0] status_in;
+reg         status_set;
+
 wire [24:0] ps2_mouse;
 
 wire        ioctl_wr;
@@ -242,6 +245,9 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
+	.status_in(status_in),
+	.status_set(status_set),
+	
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
 
@@ -568,6 +574,33 @@ always @(posedge clk_cpu) begin
 	if(~old_p2 & old_p1) pause <= ~pause;
 
 	if(reset) pause <= 0;
+end
+
+wire [2:0] sw_ctl = joy_0[13:11] | joy_1[13:11];
+
+always @(posedge clk_sys) begin
+	reg [2:0] old_sw;
+	
+	status_set <= 0;
+
+	old_sw <= sw_ctl;
+	if(~old_sw[0] & sw_ctl[0]) begin
+		status_set <= 1;
+		status_in <= status;
+		status_in[2] <= ~status[2];
+	end
+	
+	if(~old_sw[1] & sw_ctl[1]) begin
+		status_set <= 1;
+		status_in <= status;
+		status_in[3] <= ~status[3];
+	end
+
+	if(~old_sw[2] & sw_ctl[2]) begin
+		status_set <= 1;
+		status_in <= status;
+		status_in[4] <= ~status[4];
+	end
 end
 
 endmodule
