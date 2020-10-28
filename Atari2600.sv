@@ -144,7 +144,7 @@ assign VIDEO_ARY = status[14] ? 8'd9  : status[13] ? 8'd108 : adaptive_ary;
 // 0         1         2         3
 // 01234567890123456789012345678901
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// XXXXXXXX XXXXXXXX
+// XXXXXXXX XXXXXXXXXX
 
 `include "build_id.v" 
 localparam CONF_STR = {
@@ -158,6 +158,8 @@ localparam CONF_STR = {
 	"OG,De-comb,Off,On;",
 	"ODE,Aspect ratio,Adaptive,Fixed,Wide;",
 	"O57,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"-;",
+	"OHI,Audio,Mono,Stereo 100%,Stereo 75%,Stereo 50%;",
 	"-;",
 	"O3,Difficulty P1,B,A;",
 	"O4,Difficulty P2,B,A;",
@@ -303,11 +305,11 @@ always @(posedge clk_sys) begin
 	end
 end
 
-wire [4:0] audio;
-assign AUDIO_R = {3{audio}};
-assign AUDIO_L = AUDIO_R;
+wire [3:0] aud0,aud1;
+assign AUDIO_R = {4{aud1}};
+assign AUDIO_L = {4{aud0}};
 assign AUDIO_S = 0;
-assign AUDIO_MIX = 0;
+assign AUDIO_MIX = status[18:17] + 2'd3;
 
 A2601top A2601top
 (
@@ -315,7 +317,8 @@ A2601top A2601top
 	.clk(clk_cpu),
 	.vid_clk(clk_sys),
 
-	.audio(audio),
+	.aud0(aud0),
+	.aud1(aud1),
 
 	.O_VSYNC(vs),
 	.O_HSYNC(hs),

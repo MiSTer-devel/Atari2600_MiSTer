@@ -38,7 +38,8 @@ entity A2601top is
 		clk       : in std_logic;
 		vid_clk   : in std_logic;
 
-		audio     : out std_logic_vector(4 downto 0);
+		aud0      : out std_logic_vector(3 downto 0);
+		aud1      : out std_logic_vector(3 downto 0);
 
 		O_VSYNC   : out std_logic;
 		O_HSYNC   : out std_logic;
@@ -105,9 +106,6 @@ signal au0: std_logic;
 signal au1: std_logic;
 signal av0: std_logic_vector(3 downto 0);
 signal av1: std_logic_vector(3 downto 0);
-
-signal auv0: unsigned(4 downto 0);
-signal auv1: unsigned(4 downto 0);
 
 signal rst: std_logic := '1';
 signal old_rst: std_logic := '1';
@@ -286,10 +284,8 @@ inpt3 <= pd3 when paddle_ena34 = '1' else p2_f2;
 inpt4 <= p1_f or paddle_ena12;
 inpt5 <= p2_f or paddle_ena34;
 
-auv0 <= ("0" & unsigned(av0)) when (au0 = '1') else "00000";
-auv1 <= ("0" & unsigned(av1)) when (au1 = '1') else "00000";
-
-audio <= std_logic_vector(auv0 + auv1);
+aud0 <= av0 when au0 = '1' else "0000";
+aud1 <= av1 when au1 = '1' else "0000";
 
 ram: work.ramx8 generic map(11) port map(clk, sc_r, cpu_d, sc_d_out, sc_a);
 
