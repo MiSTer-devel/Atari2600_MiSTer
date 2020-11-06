@@ -39,8 +39,8 @@ module emu
 	output        CE_PIXEL,
 
 	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-	output  [7:0] VIDEO_ARX,
-	output  [7:0] VIDEO_ARY,
+	output [11:0] VIDEO_ARX,
+	output [11:0] VIDEO_ARY,
 
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
@@ -50,6 +50,7 @@ module emu
 	output        VGA_DE,    // = ~(VBlank | HBlank)
 	output        VGA_F1,
 	output [1:0]  VGA_SL,
+	output        VGA_SCALER, // Force VGA scaler
 
 	output        LED_USER,  // 1 - ON, 0 - OFF.
 
@@ -136,15 +137,18 @@ assign LED_USER  = 0;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
 assign BUTTONS   = 0;
+assign VGA_SCALER= 0;
 
-assign VIDEO_ARX = status[14] ? 8'd16 : 8'd154;
-assign VIDEO_ARY = status[14] ? 8'd9  : status[13] ? 8'd108 : adaptive_ary;
+wire [2:0] ar = status[21:19];
+
+assign VIDEO_ARX = (!ar[2:1]) ? 12'd154 : (ar - 2'd2);
+assign VIDEO_ARY = (!ar[2:1]) ? (ar[0] ? 12'd108 : adaptive_ary) : 12'd0;
 
 // Status Bit Map:
 // 0         1         2         3
 // 01234567890123456789012345678901
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// XXXXXXXX XXXXXXXXXX
+// XXXXXXXX XXXX  XXXXXXX
 
 `include "build_id.v" 
 localparam CONF_STR = {
@@ -156,7 +160,7 @@ localparam CONF_STR = {
 	"O2,Video mode,Color,Mono;",
 	"OC,VBlank,Regenerate,Original;",
 	"OG,De-comb,Off,On;",
-	"ODE,Aspect ratio,Adaptive,Fixed,Wide;",
+	"OJL,Aspect ratio,Adaptive,Fixed,Full Screen,[ARC1],[ARC2];",
 	"O57,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
 	"OHI,Audio,Mono,Stereo 100%,Stereo 75%,Stereo 50%;",
