@@ -1,4 +1,4 @@
-# Atari 2600 for [MiSTer Board](https://github.com/MiSTer-devel/Main_MiSTer/wiki)
+# [Atari 2600](https://en.wikipedia.org/wiki/Bally_Astrocade) for [MiSTer Platform](https://github.com/MiSTer-devel/Main_MiSTer/wiki)
 
 ### This is the port of [A2601 by  Retromaster](http://retromaster.wordpress.com/a2601)
 
