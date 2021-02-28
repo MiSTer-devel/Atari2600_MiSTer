@@ -39,8 +39,9 @@ module emu
 	output        CE_PIXEL,
 
 	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-	output [11:0] VIDEO_ARX,
-	output [11:0] VIDEO_ARY,
+	//if VIDEO_ARX[12] or VIDEO_ARY[12] is set then [11:0] contains scaled size instead of aspect ratio.
+	output [12:0] VIDEO_ARX,
+	output [12:0] VIDEO_ARY,
 
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
@@ -51,6 +52,36 @@ module emu
 	output        VGA_F1,
 	output [1:0]  VGA_SL,
 	output        VGA_SCALER, // Force VGA scaler
+
+	input  [11:0] HDMI_WIDTH,
+	input  [11:0] HDMI_HEIGHT,
+
+`ifdef USE_FB
+	// Use framebuffer in DDRAM (USE_FB=1 in qsf)
+	// FB_FORMAT:
+	//    [2:0] : 011=8bpp(palette) 100=16bpp 101=24bpp 110=32bpp
+	//    [3]   : 0=16bits 565 1=16bits 1555
+	//    [4]   : 0=RGB  1=BGR (for 16/24/32 modes)
+	//
+	// FB_STRIDE either 0 (rounded to 256 bytes) or multiple of pixel size (in bytes)
+	output        FB_EN,
+	output  [4:0] FB_FORMAT,
+	output [11:0] FB_WIDTH,
+	output [11:0] FB_HEIGHT,
+	output [31:0] FB_BASE,
+	output [13:0] FB_STRIDE,
+	input         FB_VBL,
+	input         FB_LL,
+	output        FB_FORCE_BLANK,
+
+	// Palette control for 8bit modes.
+	// Ignored for other video modes.
+	output        FB_PAL_CLK,
+	output  [7:0] FB_PAL_ADDR,
+	output [23:0] FB_PAL_DOUT,
+	input  [23:0] FB_PAL_DIN,
+	output        FB_PAL_WR,
+`endif
 
 	output        LED_USER,  // 1 - ON, 0 - OFF.
 
@@ -81,6 +112,7 @@ module emu
 	output        SD_CS,
 	input         SD_CD,
 
+`ifdef USE_DDRAM
 	//High latency DDR3 RAM interface
 	//Use for non-critical time purposes
 	output        DDRAM_CLK,
@@ -93,7 +125,9 @@ module emu
 	output [63:0] DDRAM_DIN,
 	output  [7:0] DDRAM_BE,
 	output        DDRAM_WE,
+`endif
 
+`ifdef USE_SDRAM
 	//SDRAM interface with lower latency
 	output        SDRAM_CLK,
 	output        SDRAM_CKE,
@@ -106,6 +140,20 @@ module emu
 	output        SDRAM_nCAS,
 	output        SDRAM_nRAS,
 	output        SDRAM_nWE,
+`endif
+
+`ifdef DUAL_SDRAM
+	//Secondary SDRAM
+	input         SDRAM2_EN,
+	output        SDRAM2_CLK,
+	output [12:0] SDRAM2_A,
+	output  [1:0] SDRAM2_BA,
+	inout  [15:0] SDRAM2_DQ,
+	output        SDRAM2_nCS,
+	output        SDRAM2_nCAS,
+	output        SDRAM2_nRAS,
+	output        SDRAM2_nWE,
+`endif
 
 	input         UART_CTS,
 	output        UART_RTS,
@@ -140,15 +188,23 @@ assign BUTTONS   = 0;
 assign VGA_SCALER= 0;
 
 wire [2:0] ar = status[21:19];
-
-assign VIDEO_ARX = (!ar[2:1]) ? 12'd154 : (ar - 2'd2);
-assign VIDEO_ARY = (!ar[2:1]) ? (ar[0] ? 12'd108 : adaptive_ary) : 12'd0;
+video_freak video_freak
+(
+	.*,
+	.VGA_DE_IN(VGA_DE),
+	.VGA_DE(),
+	.ARX((!ar[2:1]) ? 12'd154 : (ar - 2'd2)),
+	.ARY((!ar[2:1]) ? (ar[0] ? 12'd108 : adaptive_ary) : 12'd0),
+	.CROP_SIZE(0),
+	.CROP_OFF(0),
+	.SCALE(status[23:22])
+);
 
 // Status Bit Map:
 // 0         1         2         3
 // 01234567890123456789012345678901
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// XXXXXXXX XXXX  XXXXXXX
+// XXXXXXXX XXXX  XXXXXXXXX
 
 `include "build_id.v" 
 localparam CONF_STR = {
@@ -162,6 +218,7 @@ localparam CONF_STR = {
 	"OG,De-comb,Off,On;",
 	"OJL,Aspect ratio,Adaptive,Fixed,Full Screen,[ARC1],[ARC2];",
 	"O57,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"OMN,Scale,Normal,V-Integer,Narrower HV-Integer,Wider HV-Integer;",
 	"-;",
 	"OHI,Audio,Mono,Stereo 100%,Stereo 75%,Stereo 50%;",
 	"-;",
@@ -488,14 +545,7 @@ wire de;
 video_mixer #(.LINE_LENGTH(250), .GAMMA(1)) video_mixer
 (
 	.*,
-	.clk_vid(CLK_VIDEO),
-	.ce_pix(ce_pix),
-	.ce_pix_out(CE_PIXEL),
-
-	.scanlines(0),
 	.hq2x(scale==1),
-	.mono(0),
-
 	.VGA_DE(de)
 );
 
