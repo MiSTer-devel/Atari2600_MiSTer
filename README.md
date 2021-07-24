@@ -18,7 +18,7 @@ Supported options for paddle:
 
 
 ### Supported mappers
-* Auto detected: F8, FA, F6, F4, FA, 32
+* Auto detected: F8, FA, F6, F4, 32
 * Manual set through file extension(ex: my_game.E0) : E0, FE, 3F, P2, CV, UA, E7, F0
 * SuperChip (128b RAM). 's' can be added to extension to automatically enable SuperChip (i.e. my_game.00s).
 * Any supported mapper can be forced through file extension.
