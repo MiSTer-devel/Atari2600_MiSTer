@@ -218,7 +218,7 @@ localparam CONF_STR = {
 	"OF,Swap Joystick,No,Yes;",
 	"OB,Invert Paddle,No,Yes;",
 	"-;",
-	"P1,Video;",
+	"P1,Audio & Video;",
 	"P1-;",
 	"P1O1,Colors,NTSC,PAL;",
 	"P1O2,Video mode,Color,Mono;",
