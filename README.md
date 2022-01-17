@@ -1,5 +1,8 @@
 # [Atari 2600](https://en.wikipedia.org/wiki/Atari_2600) for [MiSTer Platform](https://github.com/MiSTer-devel/Main_MiSTer/wiki)
 
+# This core is superseded by [Atari 7800 core](https://github.com/MiSTer-devel/Atari7800_MiSTer). This repository is read-only and will be kept for historical purpose.
+
+
 ### This is the port of [A2601 by  Retromaster](http://retromaster.wordpress.com/a2601)
 
 ### Installation
